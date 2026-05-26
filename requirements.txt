@@ -1,0 +1,7 @@
+openai>=1.0.0
+python-dotenv
+mysql-connector-python
+pandas
+azure-search-documents
+azure-core
+streamlit>=1.28.0
