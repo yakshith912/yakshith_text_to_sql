@@ -2,8 +2,12 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
-from text_to_sql import question_to_sql
-from database import execute_query, test_connection
+import re
+import time
+import io
+import sqlite3
+from text_to_sql import question_to_sql, query_uploaded_datasets, generate_ai_insight
+from database import execute_query, test_connection, get_db_type
 
 st.set_page_config(
     page_title="AaiTech · AI SQL Assistant",
@@ -633,7 +637,14 @@ elif _page == "📊 Dashboard":
     LO=dict(paper_bgcolor=BG,plot_bgcolor=BG,font=FONT,
             margin=dict(t=20,b=20,l=10,r=10),height=280)
 
-    # ── Dashboard Header ──────────────────────────────────────────────────────
+    # Initialize session states for uploaded datasets
+    if "uploaded_datasets" not in st.session_state:
+        st.session_state.uploaded_datasets = {}
+    if "dataset_sqlite_conn" not in st.session_state:
+        st.session_state.dataset_sqlite_conn = sqlite3.connect(":memory:", check_same_thread=False)
+        st.session_state.dataset_sqlite_conn.row_factory = sqlite3.Row
+
+    # ── Overhauled Dashboard Page Header ──────────────────────────────────────
     st.markdown("""
     <div style="background:linear-gradient(135deg,#0D0D14 0%,#1A1A2E 60%,#16213E 100%);
         border:1px solid rgba(16,185,129,0.2);border-radius:16px;
@@ -645,298 +656,671 @@ elif _page == "📊 Dashboard":
             <div>
                 <div style="font-size:0.72rem;font-weight:700;color:#10B981;
                     text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.4rem;">
-                    &#10022; AaiTech Industries &nbsp;&middot;&nbsp; Strategic Analytics
+                    &#10022; AaiTech Industries &nbsp;&middot;&nbsp; Advanced Analytics
                 </div>
                 <span style="font-size:1.7rem;font-weight:900;
                     background:linear-gradient(90deg,#FFFFFF 0%,#10B981 60%,#F59E0B 100%);
                     -webkit-background-clip:text;-webkit-text-fill-color:transparent;
                     background-clip:text;display:block;line-height:1.2;">
-                    Strategic Business Performance Dashboard
+                    Strategic Business Dashboard &amp; Analytics Hub
                 </span>
                 <span style="font-size:0.85rem;color:#64748B;display:block;margin-top:0.3rem;">
-                    Data Analytics &amp; Business Intelligence &nbsp;&middot;&nbsp; Live Data
-                </span>
-            </div>
-            <div style="display:flex;gap:0.6rem;flex-wrap:wrap;">
-                <span style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);
-                    color:#10B981;padding:0.3rem 0.8rem;border-radius:20px;font-size:0.72rem;font-weight:700;">
-                    &#128994; LIVE
-                </span>
-                <span style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);
-                    color:#10B981;padding:0.3rem 0.8rem;border-radius:20px;font-size:0.72rem;font-weight:700;">
-                    &#128202; Power BI Style
+                    Analyze live database records or upload and merge your custom CSV/Excel datasets.
                 </span>
             </div>
         </div>
     </div>
     """, unsafe_allow_html=True)
 
-    try:
-        # ── Load data ─────────────────────────────────────────────────────────
-        _dc  = execute_query("SELECT * FROM customers")
-        _do  = execute_query("SELECT * FROM orders")
-        _dp  = execute_query("SELECT * FROM products")
-        _ds  = execute_query("SELECT * FROM suppliers")
-        _dod = execute_query("SELECT * FROM order_details")
-        _dof = _do.merge(_dc, on="customer_id", how="left")
-        _dr  = _dod.merge(_dp, on="product_id", how="left")
-        _dr["line_total"] = _dr["quantity"] * _dr["unit_price_x"]
+    _sub_tabs = st.tabs(["🏛️ Live Database Insights", "📁 Multi-Dataset File Analyzer"])
 
-        # ── Filters ───────────────────────────────────────────────────────────
-        st.markdown('<div class="glass-card" style="padding:0.8rem 1.2rem;margin-bottom:1rem;">', unsafe_allow_html=True)
-        _fc1,_fc2,_fc3,_fc4,_fc5 = st.columns([2,2,2,1,1])
-        with _fc1:
-            _ctries=["All Countries"]+sorted(_dc["country"].dropna().unique().tolist())
-            _sc=st.selectbox("&#127757; Country",_ctries,key="db_c")
-        with _fc2:
-            _cats=["All Categories"]+sorted(_dp["category"].dropna().unique().tolist())
-            _sk=st.selectbox("&#127991; Category",_cats,key="db_k")
-        with _fc3:
-            _tn=st.select_slider("&#128202; Top N",[3,5,7,10],value=5,key="db_n")
-        with _fc4:
-            st.markdown("<br>",unsafe_allow_html=True)
-            st.button("&#8635; Reset",use_container_width=True,key="db_rst")
-        with _fc5:
-            st.markdown("<br>",unsafe_allow_html=True)
-            _export_all = st.button("&#11015; Export",use_container_width=True,key="db_exp")
-        st.markdown('</div>', unsafe_allow_html=True)
+    # ══════════════════════════════════════════════════════════════════════════
+    # SUB-TAB 1: Live Database Insights (Original pre-built dashboard)
+    # ══════════════════════════════════════════════════════════════════════════
+    with _sub_tabs[0]:
+        try:
+            # ── Load data ─────────────────────────────────────────────────────────
+            _dc  = execute_query("SELECT * FROM customers")
+            _do  = execute_query("SELECT * FROM orders")
+            _dp  = execute_query("SELECT * FROM products")
+            _ds  = execute_query("SELECT * FROM suppliers")
+            _dod = execute_query("SELECT * FROM order_details")
+            _dof = _do.merge(_dc, on="customer_id", how="left")
+            _dr  = _dod.merge(_dp, on="product_id", how="left")
+            _dr["line_total"] = _dr["quantity"] * _dr["unit_price_x"]
 
-        # Apply filters
-        _fo=_dof.copy(); _fr=_dr.copy()
-        if _sc!="All Countries":
-            _fo=_fo[_fo["country"]==_sc]
-            _fr=_fr[_fr["order_id"].isin(_fo["order_id"])]
-        if _sk!="All Categories":
-            _fr=_fr[_fr["category"]==_sk]
+            # ── Filters ───────────────────────────────────────────────────────────
+            st.markdown('<div class="glass-card" style="padding:0.8rem 1.2rem;margin-bottom:1rem;">', unsafe_allow_html=True)
+            _fc1,_fc2,_fc3,_fc4,_fc5 = st.columns([2,2,2,1,1])
+            with _fc1:
+                _ctries=["All Countries"]+sorted(_dc["country"].dropna().unique().tolist())
+                _sc=st.selectbox("&#127757; Country",_ctries,key="db_c")
+            with _fc2:
+                _cats=["All Categories"]+sorted(_dp["category"].dropna().unique().tolist())
+                _sk=st.selectbox("&#127991; Category",_cats,key="db_k")
+            with _fc3:
+                _tn=st.select_slider("&#128202; Top N",[3,5,7,10],value=5,key="db_n")
+            with _fc4:
+                st.markdown("<br>",unsafe_allow_html=True)
+                st.button("&#8635; Reset",use_container_width=True,key="db_rst")
+            with _fc5:
+                st.markdown("<br>",unsafe_allow_html=True)
+                _export_all = st.button("&#11015; Export",use_container_width=True,key="db_exp")
+            st.markdown('</div>', unsafe_allow_html=True)
 
-        # ── KPI Calculations ──────────────────────────────────────────────────
-        _nc  = len(_dc) if _sc=="All Countries" else len(_dc[_dc["country"]==_sc])
-        _no  = len(_fo)
-        _rev = round(_fr["line_total"].sum(), 2)
-        _ao  = round(_fr.groupby("order_id")["line_total"].sum().mean(), 2) if not _fr.empty else 0
-        _np2 = len(_dp) if _sk=="All Categories" else len(_dp[_dp["category"]==_sk])
-        _af  = round(_fo["freight"].mean(), 2) if not _fo.empty else 0
-        _tfreight = round(_fo["freight"].sum(), 2) if not _fo.empty else 0
-        _top_country = _fo.groupby("country").size().idxmax() if not _fo.empty else "N/A"
-        _cat_rev = _fr.groupby("category")["line_total"].sum()
-        _top_cat = _cat_rev.idxmax() if not _cat_rev.empty else "N/A"
-        _top_cat_v = round(float(_cat_rev.max()), 2) if not _cat_rev.empty else 0
-        _prod_rev = _fr.groupby("product_name")["line_total"].sum()
-        _top_prod = _prod_rev.idxmax() if not _prod_rev.empty else "N/A"
+            # Apply filters
+            _fo=_dof.copy(); _fr=_dr.copy()
+            if _sc!="All Countries":
+                _fo=_fo[_fo["country"]==_sc]
+                _fr=_fr[_fr["order_id"].isin(_fo["order_id"])]
+            if _sk!="All Categories":
+                _fr=_fr[_fr["category"]==_sk]
 
-        # ── Row 1: 6 KPI Tiles ────────────────────────────────────────────────
-        _k = st.columns(6)
-        _kpis = [
-            (_k[0], C1, "&#128101;", "Customers",    f"{_nc}",           "Active accounts"),
-            (_k[1], C2, "&#128230;", "Total Orders",  f"{_no}",           "Processed"),
-            (_k[2], C3, "&#128176;", "Total Revenue", f"${_rev:,.0f}",    "Gross sales"),
-            (_k[3], C4, "&#128200;", "Avg Order",     f"${_ao:,.0f}",     "Per order"),
-            (_k[4], C5, "&#128717;", "Products",      f"{_np2}",          "In catalog"),
-            (_k[5], C1, "&#128666;", "Total Freight", f"${_tfreight:,.0f}","Shipping cost"),
-        ]
-        for _col,_clr,_ico,_lbl,_val,_sub in _kpis:
-            with _col:
-                st.markdown(f"""
-                <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);
-                    border-top:3px solid {_clr};border-radius:12px;padding:1rem 0.8rem;
-                    transition:all 0.2s;">
-                    <div style="font-size:1.3rem;margin-bottom:0.3rem;">{_ico}</div>
-                    <div style="font-size:0.68rem;font-weight:700;color:#64748B;
-                        text-transform:uppercase;letter-spacing:0.08em;">{_lbl}</div>
-                    <div style="font-size:1.6rem;font-weight:800;color:{_clr};
-                        line-height:1.1;margin:0.2rem 0;">{_val}</div>
-                    <div style="font-size:0.68rem;color:#475569;">{_sub}</div>
-                </div>""", unsafe_allow_html=True)
+            # ── KPI Calculations ──────────────────────────────────────────────────
+            _nc  = len(_dc) if _sc=="All Countries" else len(_dc[_dc["country"]==_sc])
+            _no  = len(_fo)
+            _rev = round(_fr["line_total"].sum(), 2)
+            _ao  = round(_fr.groupby("order_id")["line_total"].sum().mean(), 2) if not _fr.empty else 0
+            _np2 = len(_dp) if _sk=="All Categories" else len(_dp[_dp["category"]==_sk])
+            _af  = round(_fo["freight"].mean(), 2) if not _fo.empty else 0
+            _tfreight = round(_fo["freight"].sum(), 2) if not _fo.empty else 0
+            _top_country = _fo.groupby("country").size().idxmax() if not _fo.empty else "N/A"
+            _cat_rev = _fr.groupby("category")["line_total"].sum()
+            _top_cat = _cat_rev.idxmax() if not _cat_rev.empty else "N/A"
+            _top_cat_v = round(float(_cat_rev.max()), 2) if not _cat_rev.empty else 0
+            _prod_rev = _fr.groupby("product_name")["line_total"].sum()
+            _top_prod = _prod_rev.idxmax() if not _prod_rev.empty else "N/A"
+
+            # ── Row 1: 6 KPI Tiles ────────────────────────────────────────────────
+            _k = st.columns(6)
+            _kpis = [
+                (_k[0], C1, "&#128101;", "Customers",    f"{_nc}",           "Active accounts"),
+                (_k[1], C2, "&#128230;", "Total Orders",  f"{_no}",           "Processed"),
+                (_k[2], C3, "&#128176;", "Total Revenue", f"${_rev:,.0f}",    "Gross sales"),
+                (_k[3], C4, "&#128200;", "Avg Order",     f"${_ao:,.0f}",     "Per order"),
+                (_k[4], C5, "&#128717;", "Products",      f"{_np2}",          "In catalog"),
+                (_k[5], C1, "&#128666;", "Total Freight", f"${_tfreight:,.0f}","Shipping cost"),
+            ]
+            for _col,_clr,_ico,_lbl,_val,_sub in _kpis:
+                with _col:
+                    st.markdown(f"""
+                    <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);
+                        border-top:3px solid {_clr};border-radius:12px;padding:1rem 0.8rem;
+                        transition:all 0.2s;">
+                        <div style="font-size:1.3rem;margin-bottom:0.3rem;">{_ico}</div>
+                        <div style="font-size:0.68rem;font-weight:700;color:#64748B;
+                            text-transform:uppercase;letter-spacing:0.08em;">{_lbl}</div>
+                        <div style="font-size:1.6rem;font-weight:800;color:{_clr};
+                            line-height:1.1;margin:0.2rem 0;">{_val}</div>
+                        <div style="font-size:0.68rem;color:#475569;">{_sub}</div>
+                    </div>""", unsafe_allow_html=True)
+
+            st.markdown("<br>", unsafe_allow_html=True)
+
+            # ── Insight Banner ────────────────────────────────────────────────────
+            st.markdown(f"""
+            <div style="background:linear-gradient(90deg,rgba(16,185,129,0.08),rgba(245,158,11,0.05));
+                border:1px solid rgba(16,185,129,0.2);border-radius:10px;
+                padding:0.7rem 1.2rem;margin-bottom:1rem;font-size:0.82rem;">
+                <span style="color:#10B981;font-weight:700;">&#10022; Key Insights &nbsp;</span>
+                <span style="color:#94A3B8;">
+                    Top market: <b style="color:#FFFFFF;">{_top_country}</b> &nbsp;&middot;&nbsp;
+                    Best category: <b style="color:#FFFFFF;">{_top_cat}</b>
+                    <span style="color:#10B981;">(${_top_cat_v:,.0f})</span> &nbsp;&middot;&nbsp;
+                    Top product: <b style="color:#FFFFFF;">{_top_prod}</b>
+                </span>
+            </div>""", unsafe_allow_html=True)
+
+            # ── Row 2: Revenue Donut + Orders Bar ─────────────────────────────────
+            st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #10B981;padding-left:0.6rem;">&#128202; Sales Performance</p>', unsafe_allow_html=True)
+            _r1,_r2 = st.columns(2)
+
+            with _r1:
+                st.markdown('<div class="glass-card" style="padding:1rem;">', unsafe_allow_html=True)
+                st.markdown('<span style="font-size:0.82rem;font-weight:700;color:#F1F5F9;">Revenue by Category</span>', unsafe_allow_html=True)
+                st.markdown('<span style="font-size:0.72rem;color:#475569;display:block;margin-bottom:0.4rem;">Proportional revenue contribution</span>', unsafe_allow_html=True)
+                _cr=_fr.groupby("category")["line_total"].sum().reset_index()
+                _cr.columns=["Category","Revenue"]
+                if not _cr.empty:
+                    _f1=go.Figure(go.Pie(
+                        labels=_cr["Category"],values=_cr["Revenue"],hole=0.58,
+                        marker_colors=PAL,textinfo="label+percent",
+                        hovertemplate="<b>%{label}</b><br>$%{value:,.2f}<extra></extra>"))
+                    _f1.update_layout(**LO,showlegend=False)
+                    _f1.add_annotation(text=f"<b>${_rev:,.0f}</b><br><span style='font-size:9px'>Total</span>",
+                        x=0.5,y=0.5,showarrow=False,font_size=13,font_color=C1)
+                    st.plotly_chart(_f1,use_container_width=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+
+            with _r2:
+                st.markdown('<div class="glass-card" style="padding:1rem;">', unsafe_allow_html=True)
+                st.markdown('<span style="font-size:0.82rem;font-weight:700;color:#F1F5F9;">Orders by Country</span>', unsafe_allow_html=True)
+                st.markdown('<span style="font-size:0.72rem;color:#475569;display:block;margin-bottom:0.4rem;">Order volume per destination market</span>', unsafe_allow_html=True)
+                _co=_fo.groupby("country").size().reset_index(name="Orders")
+                _co=_co.sort_values("Orders",ascending=False).head(_tn)
+                if not _co.empty:
+                    _f2=go.Figure(go.Bar(
+                        x=_co["country"],y=_co["Orders"],
+                        marker=dict(color=_co["Orders"],
+                            colorscale=[[0,"rgba(251,183,36,0.2)"],[1,C1]],showscale=False),
+                        text=_co["Orders"],textposition="outside",
+                        hovertemplate="<b>%{x}</b><br>%{y} orders<extra></extra>"))
+                    _f2.update_layout(**LO,
+                        xaxis=dict(showgrid=False,color="#475569"),
+                        yaxis=dict(showgrid=True,gridcolor=GRID,color="#475569"))
+                    st.plotly_chart(_f2,use_container_width=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+
+            # ── Row 3: Top Products + Freight ─────────────────────────────────────
+            _r3,_r4 = st.columns(2)
+
+            with _r3:
+                st.markdown('<div class="glass-card" style="padding:1rem;">', unsafe_allow_html=True)
+                st.markdown(f'<span style="font-size:0.82rem;font-weight:700;color:#F1F5F9;">Top {_tn} Products by Revenue</span>', unsafe_allow_html=True)
+                st.markdown('<span style="font-size:0.72rem;color:#475569;display:block;margin-bottom:0.4rem;">Best performing products ranked by sales</span>', unsafe_allow_html=True)
+                _pr=_fr.groupby("product_name")["line_total"].sum().reset_index()
+                _pr.columns=["Product","Revenue"]
+                _pr=_pr.sort_values("Revenue",ascending=True).tail(_tn)
+                if not _pr.empty:
+                    _f3=go.Figure(go.Bar(
+                        y=_pr["Product"],x=_pr["Revenue"],orientation="h",
+                        marker=dict(color=_pr["Revenue"],
+                            colorscale=[[0,"rgba(16,185,129,0.2)"],[1,C2]],showscale=False),
+                        text=_pr["Revenue"].apply(lambda v:f"${v:,.0f}"),textposition="outside",
+                        hovertemplate="<b>%{y}</b><br>$%{x:,.2f}<extra></extra>"))
+                    _f3.update_layout(**LO,
+                        xaxis=dict(showgrid=True,gridcolor=GRID,color="#475569"),
+                        yaxis=dict(showgrid=False,color="#475569"))
+                    st.plotly_chart(_f3,use_container_width=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+
+            with _r4:
+                st.markdown('<div class="glass-card" style="padding:1rem;">', unsafe_allow_html=True)
+                st.markdown('<span style="font-size:0.82rem;font-weight:700;color:#F1F5F9;">Freight Cost Analysis</span>', unsafe_allow_html=True)
+                st.markdown('<span style="font-size:0.72rem;color:#475569;display:block;margin-bottom:0.4rem;">Shipping expenditure by destination country</span>', unsafe_allow_html=True)
+                _fg=_fo.groupby("country")["freight"].sum().reset_index()
+                _fg=_fg.sort_values("freight",ascending=False).head(_tn)
+                if not _fg.empty:
+                    _f4=go.Figure(go.Bar(
+                        x=_fg["country"],y=_fg["freight"],
+                        marker=dict(color=_fg["freight"],
+                            colorscale=[[0,"rgba(139,92,246,0.2)"],[1,C3]],showscale=False),
+                        text=_fg["freight"].apply(lambda v:f"${v:,.1f}"),textposition="outside",
+                        hovertemplate="<b>%{x}</b><br>$%{y:,.2f}<extra></extra>"))
+                    _f4.update_layout(**LO,
+                        xaxis=dict(showgrid=False,color="#475569"),
+                        yaxis=dict(showgrid=True,gridcolor=GRID,color="#475569"))
+                    st.plotly_chart(_f4,use_container_width=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+
+            # ── Row 4: Treemap + Supplier Performance ─────────────────────────────
+            st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.1em;margin:0.5rem 0 0.6rem;border-left:3px solid #10B981;padding-left:0.6rem;">&#128269; Product & Supplier Intelligence</p>', unsafe_allow_html=True)
+            _r5,_r6 = st.columns([3,2])
+
+            with _r5:
+                st.markdown('<div class="glass-card" style="padding:1rem;">', unsafe_allow_html=True)
+                st.markdown('<span style="font-size:0.82rem;font-weight:700;color:#F1F5F9;">Product Revenue Treemap</span>', unsafe_allow_html=True)
+                st.markdown('<span style="font-size:0.72rem;color:#475569;display:block;margin-bottom:0.4rem;">Click a category to drill into products</span>', unsafe_allow_html=True)
+                _tree=_fr.groupby(["category","product_name"])["line_total"].sum().reset_index()
+                _tree.columns=["Category","Product","Revenue"]
+                if not _tree.empty:
+                    _f5=px.treemap(_tree,path=["Category","Product"],values="Revenue",
+                        color="Revenue",
+                        color_continuous_scale=[[0,"rgba(251,183,36,0.15)"],[0.5,C1],[1,"#78350F"]])
+                    _f5.update_traces(
+                        texttemplate="<b>%{label}</b><br>$%{value:,.0f}",
+                        hovertemplate="<b>%{label}</b><br>$%{value:,.2f}<extra></extra>")
+                    _f5.update_layout(margin=dict(t=10,b=10,l=10,r=10),height=340,
+                        coloraxis_showscale=False,paper_bgcolor=BG,
+                        font=dict(family="Inter,sans-serif",size=11,color="#F1F5F9"))
+                    st.plotly_chart(_f5,use_container_width=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+
+            with _r6:
+                st.markdown('<div class="glass-card" style="padding:1rem;">', unsafe_allow_html=True)
+                st.markdown('<span style="font-size:0.82rem;font-weight:700;color:#F1F5F9;">Supplier Performance</span>', unsafe_allow_html=True)
+                st.markdown('<span style="font-size:0.72rem;color:#475569;display:block;margin-bottom:0.4rem;">Products supplied per vendor</span>', unsafe_allow_html=True)
+                _sup=_ds.merge(
+                    _dp.groupby("supplier_id").size().reset_index(name="Products"),
+                    on="supplier_id",how="left").fillna(0)
+                _sup["Products"]=_sup["Products"].astype(int)
+                _sup=_sup[["company_name","country","Products"]].rename(
+                    columns={"company_name":"Supplier","country":"Country"})
+                _sup=_sup.sort_values("Products",ascending=False)
+                _f6=go.Figure(go.Bar(
+                    x=_sup["Products"],y=_sup["Supplier"],orientation="h",
+                    marker_color=C2,
+                    text=_sup["Products"],textposition="outside",
+                    hovertemplate="<b>%{y}</b><br>Products: %{x}<extra></extra>"))
+                _f6.update_layout(margin=dict(t=5,b=5,l=5,r=30),height=340,
+                    paper_bgcolor=BG,plot_bgcolor=BG,font=FONT,
+                    xaxis=dict(showgrid=True,gridcolor=GRID,color="#475569"),
+                    yaxis=dict(showgrid=False,color="#475569",autorange="reversed"))
+                st.plotly_chart(_f6,use_container_width=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+
+            # ── Row 5: Orders Explorer ────────────────────────────────────────────
+            st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.1em;margin:0.5rem 0 0.6rem;border-left:3px solid #10B981;padding-left:0.6rem;">&#128203; Orders Explorer</p>', unsafe_allow_html=True)
+            st.markdown('<div class="glass-card" style="padding:1rem;">', unsafe_allow_html=True)
+            _srch=st.text_input("Search orders",placeholder="Search by company or country...",
+                key="db_srch",label_visibility="collapsed")
+            _tbl=_fo[["order_id","company_name","country","order_date","ship_city","freight"]].copy()
+            _tbl.columns=["Order ID","Company","Country","Date","Ship City","Freight ($)"]
+            if _srch:
+                _mask=(_tbl["Company"].str.contains(_srch,case=False,na=False)|
+                       _tbl["Country"].str.contains(_srch,case=False,na=False))
+                _tbl=_tbl[_mask]
+            st.dataframe(_tbl,use_container_width=True,hide_index=True,height=220)
+            _oe1,_oe2,_ = st.columns([1,1,4])
+            with _oe1:
+                st.caption(f"Showing {len(_tbl)} of {len(_fo)} orders")
+            with _oe2:
+                if not _tbl.empty:
+                    st.download_button("&#11015; Export CSV",
+                        data=_tbl.to_csv(index=False),
+                        file_name="orders_export.csv",mime="text/csv",
+                        use_container_width=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+
+            # Export all data
+            if _export_all:
+                _all = _fo[["order_id","company_name","country","order_date","ship_city","freight"]].copy()
+                st.download_button("&#11015; Download Full Dataset",
+                    data=_all.to_csv(index=False),
+                    file_name="full_dashboard_export.csv",mime="text/csv")
+
+            # ── Footer ────────────────────────────────────────────────────────────
+            st.markdown("""
+            <div style="text-align:center;padding:1rem 0 0.5rem;
+                color:#334155;font-size:0.72rem;
+                border-top:1px solid rgba(255,255,255,0.05);margin-top:1rem;">
+                AaiTech Industries &nbsp;&middot;&nbsp;
+                Strategic Business Performance Dashboard &nbsp;&middot;&nbsp;
+                Data Analytics &amp; Business Intelligence &nbsp;&middot;&nbsp;
+                &copy; 2025
+            </div>""", unsafe_allow_html=True)
+
+        except Exception as _e:
+            st.markdown(f'<div class="toast-error">&#10060; Dashboard error: {_e}</div>',
+                unsafe_allow_html=True)
+            st.info("Make sure MySQL is running. Use the sidebar DB status indicator.")
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # SUB-TAB 2: Multi-Dataset File Analyzer (Custom CSV/Excel workspace)
+    # ══════════════════════════════════════════════════════════════════════════
+    with _sub_tabs[1]:
+        st.markdown("""
+        <div class="glass-card" style="margin-bottom:1.5rem; padding: 1.2rem;">
+            <h4 style="margin:0 0 0.5rem;color:#10B981!important;">📁 Custom Dataset Workspace</h4>
+            <p style="font-size:0.85rem;color:#94A3B8;margin:0;">
+                Upload, manage, and analyze your CSV or Excel files. Join tables, slice data with column filters, build custom Plotly charts, and query datasets in natural language using the AI SQL Copilot.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # 1. FILE UPLOAD & MANAGEMENT SECTION
+        _up_col1, _up_col2 = st.columns([1, 1])
+        with _up_col1:
+            st.markdown('<div class="glass-card" style="height:100%; padding:1.2rem;">', unsafe_allow_html=True)
+            st.markdown('<span style="font-size:0.9rem;font-weight:700;color:#F1F5F9;display:block;margin-bottom:0.6rem;">⚡ Upload Datasets</span>', unsafe_allow_html=True)
+            _uploaded_files = st.file_uploader(
+                "Upload CSV or Excel files", 
+                type=["csv", "xlsx"], 
+                accept_multiple_files=True,
+                key="ds_uploader",
+                label_visibility="collapsed"
+            )
+            
+            if _uploaded_files:
+                for _f in _uploaded_files:
+                    _fname = _f.name
+                    if _fname not in st.session_state.uploaded_datasets:
+                        try:
+                            if _fname.endswith(".csv"):
+                                _df_file = pd.read_csv(_f)
+                            else:
+                                _df_file = pd.read_excel(_f)
+                            # Clean column names to be SQL-safe
+                            _clean_cols = {}
+                            for _col in _df_file.columns:
+                                _clean_name = re.sub(r'[^a-zA-Z0-9_]', '_', str(_col).strip())
+                                if not _clean_name or (not _clean_name[0].isalpha() and _clean_name[0] != '_'):
+                                    _clean_name = '_' + _clean_name
+                                _clean_cols[_col] = _clean_name
+                            _df_file = _df_file.rename(columns=_clean_cols)
+                            
+                            st.session_state.uploaded_datasets[_fname] = _df_file
+                            # Load into in-memory SQLite database
+                            _tbl_name = re.sub(r'[^a-zA-Z0-9_]', '_', _fname.split('.')[0]).lower()
+                            _df_file.to_sql(_tbl_name, st.session_state.dataset_sqlite_conn, if_exists='replace', index=False)
+                            st.toast(f"Successfully loaded '{_fname}' as '{_tbl_name}' table!", icon="✓")
+                        except Exception as _ue:
+                            st.error(f"Error parsing '{_fname}': {_ue}")
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        with _up_col2:
+            st.markdown('<div class="glass-card" style="height:100%; padding:1.2rem;">', unsafe_allow_html=True)
+            st.markdown('<span style="font-size:0.9rem;font-weight:700;color:#F1F5F9;display:block;margin-bottom:0.6rem;">📋 Loaded Datasets</span>', unsafe_allow_html=True)
+            
+            if not st.session_state.uploaded_datasets:
+                st.info("No datasets uploaded yet. Upload CSV or Excel files to begin analysis.")
+            else:
+                # List loaded datasets
+                _ds_list = []
+                for _name, _df in st.session_state.uploaded_datasets.items():
+                    _tbl_name = re.sub(r'[^a-zA-Z0-9_]', '_', _name.split('.')[0]).lower()
+                    _ds_list.append({
+                        "File Name": _name,
+                        "Table Name": _tbl_name,
+                        "Rows": f"{len(_df):,}",
+                        "Cols": f"{len(_df.columns)}"
+                    })
+                
+                _df_ds_list = pd.DataFrame(_ds_list)
+                st.dataframe(_df_ds_list, use_container_width=True, hide_index=True)
+                
+                # Delete manager
+                _del_sel = st.selectbox("Select dataset to delete:", list(st.session_state.uploaded_datasets.keys()), key="del_ds_sel")
+                if st.button("🗑️ Delete Selected Dataset", use_container_width=True):
+                    if _del_sel in st.session_state.uploaded_datasets:
+                        del st.session_state.uploaded_datasets[_del_sel]
+                        st.toast(f"Deleted dataset '{_del_sel}'", icon="🗑️")
+                        st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # ── Insight Banner ────────────────────────────────────────────────────
-        st.markdown(f"""
-        <div style="background:linear-gradient(90deg,rgba(16,185,129,0.08),rgba(245,158,11,0.05));
-            border:1px solid rgba(16,185,129,0.2);border-radius:10px;
-            padding:0.7rem 1.2rem;margin-bottom:1rem;font-size:0.82rem;">
-            <span style="color:#10B981;font-weight:700;">&#10022; Key Insights &nbsp;</span>
-            <span style="color:#94A3B8;">
-                Top market: <b style="color:#FFFFFF;">{_top_country}</b> &nbsp;&middot;&nbsp;
-                Best category: <b style="color:#FFFFFF;">{_top_cat}</b>
-                <span style="color:#10B981;">(${_top_cat_v:,.0f})</span> &nbsp;&middot;&nbsp;
-                Top product: <b style="color:#FFFFFF;">{_top_prod}</b>
-            </span>
-        </div>""", unsafe_allow_html=True)
-
-        # ── Row 2: Revenue Donut + Orders Bar ─────────────────────────────────
-        st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #10B981;padding-left:0.6rem;">&#128202; Sales Performance</p>', unsafe_allow_html=True)
-        _r1,_r2 = st.columns(2)
-
-        with _r1:
-            st.markdown('<div class="glass-card" style="padding:1rem;">', unsafe_allow_html=True)
-            st.markdown('<span style="font-size:0.82rem;font-weight:700;color:#F1F5F9;">Revenue by Category</span>', unsafe_allow_html=True)
-            st.markdown('<span style="font-size:0.72rem;color:#475569;display:block;margin-bottom:0.4rem;">Proportional revenue contribution</span>', unsafe_allow_html=True)
-            _cr=_fr.groupby("category")["line_total"].sum().reset_index()
-            _cr.columns=["Category","Revenue"]
-            if not _cr.empty:
-                _f1=go.Figure(go.Pie(
-                    labels=_cr["Category"],values=_cr["Revenue"],hole=0.58,
-                    marker_colors=PAL,textinfo="label+percent",
-                    hovertemplate="<b>%{label}</b><br>$%{value:,.2f}<extra></extra>"))
-                _f1.update_layout(**LO,showlegend=False)
-                _f1.add_annotation(text=f"<b>${_rev:,.0f}</b><br><span style='font-size:9px'>Total</span>",
-                    x=0.5,y=0.5,showarrow=False,font_size=13,font_color=C1)
-                st.plotly_chart(_f1,use_container_width=True)
+        if st.session_state.uploaded_datasets:
+            # 2. DATASET EXPLORER & PREVIEW SECTION
+            st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #10B981;padding-left:0.6rem;">🔍 Dataset Previews &amp; Schema Inspector</p>', unsafe_allow_html=True)
+            st.markdown('<div class="glass-card" style="padding:1.2rem;">', unsafe_allow_html=True)
+            
+            _active_ds = st.selectbox("Choose dataset to explore:", list(st.session_state.uploaded_datasets.keys()), key="active_ds_explorer")
+            _df_active = st.session_state.uploaded_datasets[_active_ds]
+            
+            _pv_col1, _pv_col2, _pv_col3 = st.columns([1, 1, 1])
+            with _pv_col1:
+                st.markdown(f'<div class="kpi-tile"><div class="kpi-tile-val">{len(_df_active):,}</div><div class="kpi-tile-lbl">Rows</div></div>', unsafe_allow_html=True)
+            with _pv_col2:
+                st.markdown(f'<div class="kpi-tile"><div class="kpi-tile-val">{len(_df_active.columns)}</div><div class="kpi-tile-lbl">Columns</div></div>', unsafe_allow_html=True)
+            with _pv_col3:
+                _mem = round(_df_active.memory_usage(deep=True).sum() / 1024, 1)
+                _mem_str = f"{_mem:,} KB" if _mem < 1024 else f"{round(_mem/1024, 2):,} MB"
+                st.markdown(f'<div class="kpi-tile"><div class="kpi-tile-val">{_mem_str}</div><div class="kpi-tile-lbl">Size</div></div>', unsafe_allow_html=True)
+                
+            st.markdown("<br>", unsafe_allow_html=True)
+            
+            # Columns & datatypes
+            _cols_info = []
+            for _c in _df_active.columns:
+                _dtype = str(_df_active[_c].dtype)
+                _nulls = _df_active[_c].isna().sum()
+                _uniques = _df_active[_c].nunique()
+                _cols_info.append({
+                    "Column Name": _c,
+                    "Data Type": _dtype,
+                    "Missing Values": f"{_nulls:,} ({round((_nulls/len(_df_active))*100, 1)}%)",
+                    "Unique Values": f"{_uniques:,}"
+                })
+            
+            _sub_tabs_preview = st.tabs(["📄 Data Preview", "📋 Column Information", "📈 Numerical Distribution"])
+            
+            with _sub_tabs_preview[0]:
+                _num_rows = st.slider("Rows to display:", 5, min(100, len(_df_active)), 10, key="ds_prev_rows")
+                st.dataframe(_df_active.head(_num_rows), use_container_width=True, hide_index=True)
+                
+            with _sub_tabs_preview[1]:
+                st.dataframe(pd.DataFrame(_cols_info), use_container_width=True, hide_index=True)
+                
+            with _sub_tabs_preview[2]:
+                _num_cols = _df_active.select_dtypes(include='number').columns.tolist()
+                if not _num_cols:
+                    st.info("No numerical columns available in this dataset to show stats.")
+                else:
+                    st.dataframe(_df_active[_num_cols].describe(), use_container_width=True)
+                    
             st.markdown('</div>', unsafe_allow_html=True)
+            
+            st.markdown("<br>", unsafe_allow_html=True)
+            
+            # 3. DYNAMIC COMBINED ANALYSIS / JOINER WORKSPACE
+            if len(st.session_state.uploaded_datasets) >= 2:
+                st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #10B981;padding-left:0.6rem;">🔀 Dataset Combiner / Join Builder</p>', unsafe_allow_html=True)
+                st.markdown('<div class="glass-card" style="padding:1.2rem;">', unsafe_allow_html=True)
+                st.markdown('<p style="font-size:0.8rem;color:#94A3B8;margin-bottom:1rem;">Merge two of your uploaded datasets together horizontally on a key column.</p>', unsafe_allow_html=True)
+                
+                _join_col1, _join_col2, _join_col3 = st.columns([2, 2, 1])
+                with _join_col1:
+                    _left_sel = st.selectbox("Left Dataset:", list(st.session_state.uploaded_datasets.keys()), index=0, key="join_left")
+                    _left_key = st.selectbox("Left Join Column:", st.session_state.uploaded_datasets[_left_sel].columns.tolist(), key="join_left_key")
+                with _join_col2:
+                    _right_index = 1 if len(st.session_state.uploaded_datasets) > 1 else 0
+                    _right_sel = st.selectbox("Right Dataset:", list(st.session_state.uploaded_datasets.keys()), index=_right_index, key="join_right")
+                    _right_key = st.selectbox("Right Join Column:", st.session_state.uploaded_datasets[_right_sel].columns.tolist(), key="join_right_key")
+                with _join_col3:
+                    _join_how = st.selectbox("Join Type:", ["inner", "left", "right", "outer"], index=1, key="join_how")
+                    st.markdown("<br>", unsafe_allow_html=True)
+                    _do_join = st.button("⚡ Merge Datasets", use_container_width=True)
+                    
+                if _do_join:
+                    if _left_sel == _right_sel:
+                        st.error("Cannot join a dataset with itself. Please select two different files.")
+                    else:
+                        try:
+                            _df_l = st.session_state.uploaded_datasets[_left_sel]
+                            _df_r = st.session_state.uploaded_datasets[_right_sel]
+                            
+                            # Perform pandas merge
+                            _df_merged = pd.merge(_df_l, _df_r, left_on=_left_key, right_on=_right_key, how=_join_how, suffixes=('_left', '_right'))
+                            
+                            # Store in session state under new joined name
+                            _mname = f"merged_{_left_sel.split('.')[0]}_{_right_sel.split('.')[0]}.csv"
+                            st.session_state.uploaded_datasets[_mname] = _df_merged
+                            
+                            # Load into SQLite database
+                            _tbl_m = re.sub(r'[^a-zA-Z0-9_]', '_', _mname.split('.')[0]).lower()
+                            _df_merged.to_sql(_tbl_m, st.session_state.dataset_sqlite_conn, if_exists='replace', index=False)
+                            
+                            st.success(f"Successfully joined datasets! Created new table '{_tbl_m}' with {len(_df_merged):,} rows and {len(_df_merged.columns)} columns.")
+                            st.toast(f"Merged table '{_tbl_m}' added to workspace!", icon="🔀")
+                            time.sleep(1)
+                            st.rerun()
+                        except Exception as _je:
+                            st.error(f"Merge operation failed: {_je}")
+                st.markdown('</div>', unsafe_allow_html=True)
+                st.markdown("<br>", unsafe_allow_html=True)
 
-        with _r2:
-            st.markdown('<div class="glass-card" style="padding:1rem;">', unsafe_allow_html=True)
-            st.markdown('<span style="font-size:0.82rem;font-weight:700;color:#F1F5F9;">Orders by Country</span>', unsafe_allow_html=True)
-            st.markdown('<span style="font-size:0.72rem;color:#475569;display:block;margin-bottom:0.4rem;">Order volume per destination market</span>', unsafe_allow_html=True)
-            _co=_fo.groupby("country").size().reset_index(name="Orders")
-            _co=_co.sort_values("Orders",ascending=False).head(_tn)
-            if not _co.empty:
-                _f2=go.Figure(go.Bar(
-                    x=_co["country"],y=_co["Orders"],
-                    marker=dict(color=_co["Orders"],
-                        colorscale=[[0,"rgba(251,183,36,0.2)"],[1,C1]],showscale=False),
-                    text=_co["Orders"],textposition="outside",
-                    hovertemplate="<b>%{x}</b><br>%{y} orders<extra></extra>"))
-                _f2.update_layout(**LO,
-                    xaxis=dict(showgrid=False,color="#475569"),
-                    yaxis=dict(showgrid=True,gridcolor=GRID,color="#475569"))
-                st.plotly_chart(_f2,use_container_width=True)
+            # 4. INTERACTIVE FILTER SLICER
+            st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #10B981;padding-left:0.6rem;">🎛️ Interactive Data Slicing Filters</p>', unsafe_allow_html=True)
+            st.markdown('<div class="glass-card" style="padding:1.2rem;">', unsafe_allow_html=True)
+            
+            _slice_ds = st.selectbox("Choose dataset to filter:", list(st.session_state.uploaded_datasets.keys()), key="slice_ds")
+            _df_slice = st.session_state.uploaded_datasets[_slice_ds]
+            
+            _s1, _s2, _s3 = st.columns([2, 1, 3])
+            with _s1:
+                _slice_col = st.selectbox("Column:", _df_slice.columns.tolist(), key="slice_col")
+            with _s2:
+                _is_num = pd.api.types.is_numeric_dtype(_df_slice[_slice_col])
+                _ops = ["==", "contains", "!=", ">", "<", ">=", "<="] if _is_num else ["==", "contains", "!=", "starts with"]
+                _slice_op = st.selectbox("Operator:", _ops, key="slice_op")
+            with _s3:
+                if _is_num:
+                    _min_v = float(_df_slice[_slice_col].min()) if not _df_slice[_slice_col].isna().all() else 0.0
+                    _max_v = float(_df_slice[_slice_col].max()) if not _df_slice[_slice_col].isna().all() else 100.0
+                    _slice_val = st.number_input("Value:", value=float((_min_v + _max_v)/2), key="slice_val_num")
+                else:
+                    _unq_vals = _df_slice[_slice_col].dropna().unique().tolist()
+                    if len(_unq_vals) < 40:
+                        _slice_val = st.selectbox("Value:", _unq_vals, key="slice_val_select")
+                    else:
+                        _slice_val = st.text_input("Search Term:", key="slice_val_text")
+                        
+            # Apply filter
+            _df_filtered = _df_slice.copy()
+            try:
+                if _slice_op == "==":
+                    _df_filtered = _df_filtered[_df_filtered[_slice_col] == _slice_val]
+                elif _slice_op == "!=":
+                    _df_filtered = _df_filtered[_df_filtered[_slice_col] != _slice_val]
+                elif _slice_op == "contains" and not _is_num:
+                    _df_filtered = _df_filtered[_df_filtered[_slice_col].astype(str).str.contains(str(_slice_val), case=False, na=False)]
+                elif _slice_op == "contains" and _is_num:
+                    _df_filtered = _df_filtered[_df_filtered[_slice_col].astype(str).str.contains(str(_slice_val), na=False)]
+                elif _slice_op == "starts with":
+                    _df_filtered = _df_filtered[_df_filtered[_slice_col].astype(str).str.startswith(str(_slice_val), na=False)]
+                elif _slice_op == ">":
+                    _df_filtered = _df_filtered[_df_filtered[_slice_col] > float(_slice_val)]
+                elif _slice_op == "<":
+                    _df_filtered = _df_filtered[_df_filtered[_slice_col] < float(_slice_val)]
+                elif _slice_op == ">=":
+                    _df_filtered = _df_filtered[_df_filtered[_slice_col] >= float(_slice_val)]
+                elif _slice_op == "<=":
+                    _df_filtered = _df_filtered[_df_filtered[_slice_col] <= float(_slice_val)]
+                    
+                st.markdown(f"<span style='color:#10B981;font-size:0.8rem;font-weight:600;'>✓ Showing {len(_df_filtered):,} of {len(_df_slice):,} rows matching filter criteria</span>", unsafe_allow_html=True)
+                st.dataframe(_df_filtered.head(100), use_container_width=True, hide_index=True)
+                
+                # Download section
+                _fd1, _fd2 = st.columns([2, 5])
+                with _fd1:
+                    st.download_button(
+                        "📥 Export Filtered CSV",
+                        data=_df_filtered.to_csv(index=False),
+                        file_name=f"filtered_{_slice_ds}",
+                        mime="text/csv",
+                        use_container_width=True
+                    )
+            except Exception as _fe:
+                st.error(f"Filtering error: {_fe}")
+                
             st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown("<br>", unsafe_allow_html=True)
 
-        # ── Row 3: Top Products + Freight ─────────────────────────────────────
-        _r3,_r4 = st.columns(2)
-
-        with _r3:
-            st.markdown('<div class="glass-card" style="padding:1rem;">', unsafe_allow_html=True)
-            st.markdown(f'<span style="font-size:0.82rem;font-weight:700;color:#F1F5F9;">Top {_tn} Products by Revenue</span>', unsafe_allow_html=True)
-            st.markdown('<span style="font-size:0.72rem;color:#475569;display:block;margin-bottom:0.4rem;">Best performing products ranked by sales</span>', unsafe_allow_html=True)
-            _pr=_fr.groupby("product_name")["line_total"].sum().reset_index()
-            _pr.columns=["Product","Revenue"]
-            _pr=_pr.sort_values("Revenue",ascending=True).tail(_tn)
-            if not _pr.empty:
-                _f3=go.Figure(go.Bar(
-                    y=_pr["Product"],x=_pr["Revenue"],orientation="h",
-                    marker=dict(color=_pr["Revenue"],
-                        colorscale=[[0,"rgba(16,185,129,0.2)"],[1,C2]],showscale=False),
-                    text=_pr["Revenue"].apply(lambda v:f"${v:,.0f}"),textposition="outside",
-                    hovertemplate="<b>%{y}</b><br>$%{x:,.2f}<extra></extra>"))
-                _f3.update_layout(**LO,
-                    xaxis=dict(showgrid=True,gridcolor=GRID,color="#475569"),
-                    yaxis=dict(showgrid=False,color="#475569"))
-                st.plotly_chart(_f3,use_container_width=True)
+            # 5. DYNAMIC PLOTLY VISUAL BUILDER
+            st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #10B981;padding-left:0.6rem;">📊 Custom Interactive Plotly Visualizer</p>', unsafe_allow_html=True)
+            st.markdown('<div class="glass-card" style="padding:1.2rem;">', unsafe_allow_html=True)
+            st.markdown('<p style="font-size:0.8rem;color:#94A3B8;margin-bottom:1rem;">Select a dataset and construct your own dynamic Plotly graphs using the inputs below.</p>', unsafe_allow_html=True)
+            
+            _vis_ds = st.selectbox("Select dataset to chart:", list(st.session_state.uploaded_datasets.keys()), key="vis_ds")
+            _df_vis = st.session_state.uploaded_datasets[_vis_ds]
+            
+            _v1, _v2, _v3, _v4 = st.columns([1.2, 1.5, 1.5, 1.5])
+            with _v1:
+                _vtype = st.selectbox("Chart Type:", ["Bar Chart", "Line Chart", "Scatter Plot", "Pie Chart", "Area Chart"], key="vis_type")
+            with _v2:
+                _vx = st.selectbox("X-Axis Column:", _df_vis.columns.tolist(), key="vis_x")
+            with _v3:
+                _num_cols_vis = _df_vis.select_dtypes(include='number').columns.tolist()
+                _all_cols_vis = _df_vis.columns.tolist()
+                _vy_opts = _num_cols_vis if _vtype != "Pie Chart" else _all_cols_vis
+                _vy = st.selectbox("Y-Axis Column (Metric):", _vy_opts, key="vis_y")
+            with _v4:
+                _cat_cols = _df_vis.select_dtypes(exclude='number').columns.tolist()
+                _vcolor = st.selectbox("Group By / Color (Optional):", ["None"] + _cat_cols, key="vis_color")
+                
+            # Generate Graph
+            try:
+                _chart_df = _df_vis.head(100) # Limit chart preview to first 100 rows for rendering speed
+                _color_arg = None if _vcolor == "None" else _vcolor
+                
+                _fig = None
+                if _vtype == "Bar Chart":
+                    _fig = px.bar(_chart_df, x=_vx, y=_vy, color=_color_arg, color_discrete_sequence=PAL)
+                elif _vtype == "Line Chart":
+                    _fig = px.line(_chart_df, x=_vx, y=_vy, color=_color_arg, color_discrete_sequence=PAL)
+                elif _vtype == "Scatter Plot":
+                    _fig = px.scatter(_chart_df, x=_vx, y=_vy, color=_color_arg, color_discrete_sequence=PAL)
+                elif _vtype == "Area Chart":
+                    _fig = px.area(_chart_df, x=_vx, y=_vy, color=_color_arg, color_discrete_sequence=PAL)
+                elif _vtype == "Pie Chart":
+                    _fig = px.pie(_chart_df, names=_vx, values=_vy, color_discrete_sequence=PAL, hole=0.4)
+                    
+                if _fig is not None:
+                    _fig.update_layout(**LO)
+                    if _vtype != "Pie Chart":
+                        _fig.update_layout(
+                            xaxis=dict(showgrid=False, color="#475569"),
+                            yaxis=dict(showgrid=True, gridcolor=GRID, color="#475569")
+                        )
+                    st.plotly_chart(_fig, use_container_width=True)
+                    st.caption(f"Interactive Plotly {_vtype} rendering of top 100 rows in '{_vis_ds}'")
+            except Exception as _ve:
+                st.error(f"Failed to generate visualization: {_ve}")
+                
             st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown("<br>", unsafe_allow_html=True)
 
-        with _r4:
-            st.markdown('<div class="glass-card" style="padding:1rem;">', unsafe_allow_html=True)
-            st.markdown('<span style="font-size:0.82rem;font-weight:700;color:#F1F5F9;">Freight Cost Analysis</span>', unsafe_allow_html=True)
-            st.markdown('<span style="font-size:0.72rem;color:#475569;display:block;margin-bottom:0.4rem;">Shipping expenditure by destination country</span>', unsafe_allow_html=True)
-            _fg=_fo.groupby("country")["freight"].sum().reset_index()
-            _fg=_fg.sort_values("freight",ascending=False).head(_tn)
-            if not _fg.empty:
-                _f4=go.Figure(go.Bar(
-                    x=_fg["country"],y=_fg["freight"],
-                    marker=dict(color=_fg["freight"],
-                        colorscale=[[0,"rgba(139,92,246,0.2)"],[1,C3]],showscale=False),
-                    text=_fg["freight"].apply(lambda v:f"${v:,.1f}"),textposition="outside",
-                    hovertemplate="<b>%{x}</b><br>$%{y:,.2f}<extra></extra>"))
-                _f4.update_layout(**LO,
-                    xaxis=dict(showgrid=False,color="#475569"),
-                    yaxis=dict(showgrid=True,gridcolor=GRID,color="#475569"))
-                st.plotly_chart(_f4,use_container_width=True)
+            # 6. AI POWERED NATURAL LANGUAGE COPILOT (In-memory SQLite analysis)
+            st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #10B981;padding-left:0.6rem;">💬 AI Copilot for Uploaded Datasets</p>', unsafe_allow_html=True)
+            st.markdown('<div class="glass-card" style="padding:1.2rem;">', unsafe_allow_html=True)
+            st.markdown('<span style="font-size:0.8rem;color:#94A3B8;display:block;margin-bottom:0.6rem;">Ask questions about your uploaded CSV/Excel files in plain English. The AI Copilot translates it into SQL, runs it, and summarizes the findings.</span>', unsafe_allow_html=True)
+            
+            # Assemble schemas description for system prompt
+            _schema_desc = []
+            for _name, _df in st.session_state.uploaded_datasets.items():
+                _t_name = re.sub(r'[^a-zA-Z0-9_]', '_', _name.split('.')[0]).lower()
+                _cols_str = ", ".join(f"{_col}" for _col in _df.columns)
+                _schema_desc.append(f"Table: {_t_name} - Columns: [{_cols_str}]")
+            _schema_context_str = "\n".join(_schema_desc)
+            
+            # Show schema context
+            with st.expander("👁️ View Schemas Context Sent to AI"):
+                st.code(_schema_context_str, language="text")
+                
+            with st.form("ds_ai_form"):
+                _ds_question = st.text_area(
+                    "Ask the AI Dataset Copilot:",
+                    placeholder="e.g. Find the average sales grouped by category from my merged table...\ne.g. Count the number of unique customers from customers...",
+                    key="ds_ai_q"
+                )
+                _ds_sub = st.form_submit_button("⚡ Analyze with AI Copilot", use_container_width=True)
+                
+            if _ds_sub and _ds_question.strip():
+                with st.spinner("🧠 AI Copilot is writing SQLite code and analyzing datasets..."):
+                    try:
+                        # Generate SQL via OpenAI
+                        _ds_sql = query_uploaded_datasets(_ds_question.strip(), _schema_context_str)
+                        
+                        st.markdown('<span style="font-size:0.8rem;font-weight:700;color:#FBB724;">Generated SQLite Query</span>', unsafe_allow_html=True)
+                        st.code(_ds_sql, language="sql")
+                        
+                        # Run query on local in-memory SQLite connection
+                        _df_res = pd.read_sql_query(_ds_sql, st.session_state.dataset_sqlite_conn)
+                        
+                        if _df_res is not None:
+                            st.markdown(f"<span style='color:#10B981;font-size:0.8rem;font-weight:600;'>✓ Query output ({len(_df_res)} row(s))</span>", unsafe_allow_html=True)
+                            st.dataframe(_df_res, use_container_width=True, hide_index=True)
+                            
+                            # Generate visual insights using the generated result summary
+                            _df_summary = _df_res.head(15).to_string()
+                            _ai_insight_txt = generate_ai_insight(_ds_question.strip(), _ds_sql, _df_summary)
+                            
+                            # Render AI Insight summary box
+                            st.markdown(f"""
+                            <div style="background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.25);
+                                border-radius:10px;padding:0.9rem 1.2rem;margin-top:1rem;">
+                                <span style="color:#10B981;font-weight:700;font-size:0.85rem;display:block;margin-bottom:0.3rem;">💡 AI Executive Summary</span>
+                                <p style="color:#E2E8F0;font-size:0.83rem;margin:0;line-height:1.6;">{_ai_insight_txt}</p>
+                            </div>
+                            """, unsafe_allow_html=True)
+                            
+                            # Download result CSV
+                            st.markdown("<br>", unsafe_allow_html=True)
+                            st.download_button(
+                                "📥 Download Query Results CSV",
+                                data=_df_res.to_csv(index=False),
+                                file_name="ai_copilot_results.csv",
+                                mime="text/csv"
+                            )
+                        else:
+                            st.info("Query ran successfully but returned 0 rows.")
+                    except Exception as _aie:
+                        st.markdown(f'<div class="toast-error">❌ Copilot Error: {_aie}</div>', unsafe_allow_html=True)
+                        st.info("Tip: Double check if you are referencing the correct table and column names shown in the schemas context box.")
+                        
             st.markdown('</div>', unsafe_allow_html=True)
-
-        # ── Row 4: Treemap + Supplier Performance ─────────────────────────────
-        st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.1em;margin:0.5rem 0 0.6rem;border-left:3px solid #10B981;padding-left:0.6rem;">&#128269; Product & Supplier Intelligence</p>', unsafe_allow_html=True)
-        _r5,_r6 = st.columns([3,2])
-
-        with _r5:
-            st.markdown('<div class="glass-card" style="padding:1rem;">', unsafe_allow_html=True)
-            st.markdown('<span style="font-size:0.82rem;font-weight:700;color:#F1F5F9;">Product Revenue Treemap</span>', unsafe_allow_html=True)
-            st.markdown('<span style="font-size:0.72rem;color:#475569;display:block;margin-bottom:0.4rem;">Click a category to drill into products</span>', unsafe_allow_html=True)
-            _tree=_fr.groupby(["category","product_name"])["line_total"].sum().reset_index()
-            _tree.columns=["Category","Product","Revenue"]
-            if not _tree.empty:
-                _f5=px.treemap(_tree,path=["Category","Product"],values="Revenue",
-                    color="Revenue",
-                    color_continuous_scale=[[0,"rgba(251,183,36,0.15)"],[0.5,C1],[1,"#78350F"]])
-                _f5.update_traces(
-                    texttemplate="<b>%{label}</b><br>$%{value:,.0f}",
-                    hovertemplate="<b>%{label}</b><br>$%{value:,.2f}<extra></extra>")
-                _f5.update_layout(margin=dict(t=10,b=10,l=10,r=10),height=340,
-                    coloraxis_showscale=False,paper_bgcolor=BG,
-                    font=dict(family="Inter,sans-serif",size=11,color="#F1F5F9"))
-                st.plotly_chart(_f5,use_container_width=True)
-            st.markdown('</div>', unsafe_allow_html=True)
-
-        with _r6:
-            st.markdown('<div class="glass-card" style="padding:1rem;">', unsafe_allow_html=True)
-            st.markdown('<span style="font-size:0.82rem;font-weight:700;color:#F1F5F9;">Supplier Performance</span>', unsafe_allow_html=True)
-            st.markdown('<span style="font-size:0.72rem;color:#475569;display:block;margin-bottom:0.4rem;">Products supplied per vendor</span>', unsafe_allow_html=True)
-            _sup=_ds.merge(
-                _dp.groupby("supplier_id").size().reset_index(name="Products"),
-                on="supplier_id",how="left").fillna(0)
-            _sup["Products"]=_sup["Products"].astype(int)
-            _sup=_sup[["company_name","country","Products"]].rename(
-                columns={"company_name":"Supplier","country":"Country"})
-            _sup=_sup.sort_values("Products",ascending=False)
-            _f6=go.Figure(go.Bar(
-                x=_sup["Products"],y=_sup["Supplier"],orientation="h",
-                marker_color=C2,
-                text=_sup["Products"],textposition="outside",
-                hovertemplate="<b>%{y}</b><br>Products: %{x}<extra></extra>"))
-            _f6.update_layout(margin=dict(t=5,b=5,l=5,r=30),height=340,
-                paper_bgcolor=BG,plot_bgcolor=BG,font=FONT,
-                xaxis=dict(showgrid=True,gridcolor=GRID,color="#475569"),
-                yaxis=dict(showgrid=False,color="#475569",autorange="reversed"))
-            st.plotly_chart(_f6,use_container_width=True)
-            st.markdown('</div>', unsafe_allow_html=True)
-
-        # ── Row 5: Orders Explorer ────────────────────────────────────────────
-        st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.1em;margin:0.5rem 0 0.6rem;border-left:3px solid #10B981;padding-left:0.6rem;">&#128203; Orders Explorer</p>', unsafe_allow_html=True)
-        st.markdown('<div class="glass-card" style="padding:1rem;">', unsafe_allow_html=True)
-        _srch=st.text_input("Search orders",placeholder="Search by company or country...",
-            key="db_srch",label_visibility="collapsed")
-        _tbl=_fo[["order_id","company_name","country","order_date","ship_city","freight"]].copy()
-        _tbl.columns=["Order ID","Company","Country","Date","Ship City","Freight ($)"]
-        if _srch:
-            _mask=(_tbl["Company"].str.contains(_srch,case=False,na=False)|
-                   _tbl["Country"].str.contains(_srch,case=False,na=False))
-            _tbl=_tbl[_mask]
-        st.dataframe(_tbl,use_container_width=True,hide_index=True,height=220)
-        _oe1,_oe2,_ = st.columns([1,1,4])
-        with _oe1:
-            st.caption(f"Showing {len(_tbl)} of {len(_fo)} orders")
-        with _oe2:
-            if not _tbl.empty:
-                st.download_button("&#11015; Export CSV",
-                    data=_tbl.to_csv(index=False),
-                    file_name="orders_export.csv",mime="text/csv",
-                    use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-
-        # Export all data
-        if _export_all:
-            _all = _fo[["order_id","company_name","country","order_date","ship_city","freight"]].copy()
-            st.download_button("&#11015; Download Full Dataset",
-                data=_all.to_csv(index=False),
-                file_name="full_dashboard_export.csv",mime="text/csv")
-
-        # ── Footer ────────────────────────────────────────────────────────────
-        st.markdown("""
-        <div style="text-align:center;padding:1rem 0 0.5rem;
-            color:#334155;font-size:0.72rem;
-            border-top:1px solid rgba(255,255,255,0.05);margin-top:1rem;">
-            AaiTech Industries &nbsp;&middot;&nbsp;
-            Strategic Business Performance Dashboard &nbsp;&middot;&nbsp;
-            Data Analytics &amp; Business Intelligence &nbsp;&middot;&nbsp;
-            &copy; 2025
-        </div>""", unsafe_allow_html=True)
-
-    except Exception as _e:
-        st.markdown(f'<div class="toast-error">&#10060; Dashboard error: {_e}</div>',
-            unsafe_allow_html=True)
-        st.info("Make sure MySQL is running. Use the sidebar DB status indicator.")
+            st.markdown("<br>", unsafe_allow_html=True)
 
 # ══════════════════════════════════════════════════════════════════════════════
 # HISTORY PAGE
