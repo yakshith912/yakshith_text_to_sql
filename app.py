@@ -2839,11 +2839,57 @@ elif _page == "⚙️ Settings":
     st.markdown('<div style="font-size:1.8rem;font-weight:800;color:#FFFFFF!important;-webkit-text-fill-color:#FFFFFF!important;margin-bottom:0.4rem;">&#9881; Settings</div><div style="font-size:0.9rem;color:#475569!important;margin-bottom:1.5rem;">Database connection, API configuration, and app info</div>',unsafe_allow_html=True)
 
     # DB
-    st.markdown('<div class="glass-card" style="margin-bottom:1rem;"><div style="font-size:0.85rem;font-weight:700;color:#FBB724!important;margin-bottom:1rem;">&#128451; Database Connection</div>',unsafe_allow_html=True)
-    from database import get_connection_status
+    st.markdown('<div class="glass-card" style="margin-bottom:1rem;"><div style="font-size:0.85rem;font-weight:700;color:#FBB724!important;margin-bottom:1rem;">&#128451; Database Connection Settings</div>',unsafe_allow_html=True)
+    from database import get_connection_status, update_db_config, get_db_type
+    
+    # Connection parameters from env
+    import os
+    current_db_type = get_db_type()
+    
     _dok, _dmsg = get_connection_status()
     _ddot="status-dot-green" if _dok else "status-dot-red"
-    st.markdown(f'<div style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:0.8rem 1rem;margin-bottom:0.5rem;"><div><div style="font-size:0.85rem;font-weight:600;color:#E2E8F0!important;">Active Database</div><div style="font-size:0.75rem;color:#475569!important;">{_dmsg}</div></div><div><span class="{_ddot}"></span><span style="font-size:0.8rem;color:{"#10B981" if _dok else "#EF4444"}!important;">{"Online" if _dok else "Offline"}</span></div></div>',unsafe_allow_html=True)
+    st.markdown(f'<div style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:0.8rem 1rem;margin-bottom:1rem;"><div><div style="font-size:0.85rem;font-weight:600;color:#E2E8F0!important;">Active Database</div><div style="font-size:0.75rem;color:#475569!important;">{_dmsg}</div></div><div><span class="{_ddot}"></span><span style="font-size:0.8rem;color:{"#10B981" if _dok else "#EF4444"}!important;">{"Online" if _dok else "Offline"}</span></div></div>',unsafe_allow_html=True)
+    
+    st.markdown('<p style="font-size:0.82rem;font-weight:700;color:#F1F5F9;margin-bottom:0.5rem;">Configure Database:</p>', unsafe_allow_html=True)
+    
+    # Form for updating database connection properties
+    with st.form("db_config_form"):
+        db_choice = st.selectbox("Database Type", ["sqlite", "mysql"], index=0 if current_db_type == "sqlite" else 1)
+        
+        # MySQL parameters
+        col1, col2 = st.columns(2)
+        with col1:
+            host_val = st.text_input("MySQL Host", value=os.getenv("MYSQL_HOST", "127.0.0.1"))
+            user_val = st.text_input("MySQL User", value=os.getenv("MYSQL_USER", "root"))
+            db_val = st.text_input("MySQL Database", value=os.getenv("MYSQL_DATABASE", "aaitech"))
+        with col2:
+            port_val = st.number_input("MySQL Port", min_value=1, max_value=65535, value=int(os.getenv("MYSQL_PORT", 3306)))
+            pass_val = st.text_input("MySQL Password", value=os.getenv("MYSQL_PASSWORD", ""), type="password")
+            
+        save_db_btn = st.form_submit_button("💾 Save & Connect Database")
+        
+    if save_db_btn:
+        with st.spinner("Connecting to database..."):
+            try:
+                update_db_config(
+                    db_type=db_choice,
+                    host=host_val,
+                    port=port_val,
+                    user=user_val,
+                    password=pass_val,
+                    database=db_val
+                )
+                # Test connection immediately
+                _ok, _msg = get_connection_status()
+                if _ok:
+                    st.markdown(f'<div class="toast-success">&#10003; Successfully Connected! Database set to {db_choice.upper()} ({_msg})</div>', unsafe_allow_html=True)
+                    time.sleep(1)
+                    st.rerun()
+                else:
+                    st.markdown(f'<div class="toast-error">❌ Connection failed with new settings: {_msg}</div>', unsafe_allow_html=True)
+            except Exception as e:
+                st.markdown(f'<div class="toast-error">❌ Configuration error: {e}</div>', unsafe_allow_html=True)
+                
     if st.button("&#8635; Test Connection"):
         _ok2, _msg2 = get_connection_status()
         if _ok2:

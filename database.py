@@ -225,6 +225,70 @@ def test_connection() -> bool:
     return ok
 
 
+def update_db_config(db_type: str, host: str = "127.0.0.1", port: int = 3306, user: str = "root", password: str = "", database: str = "aaitech"):
+    """Update connection variables and persist them in .env file."""
+    global DB_TYPE, MYSQL_HOST, MYSQL_PORT, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE, _conn
+    
+    # 1. Close current connection if open
+    if _conn is not None:
+        try:
+            _conn.close()
+        except Exception:
+            pass
+        _conn = None
+
+    # 2. Update memory globals
+    DB_TYPE = db_type.lower()
+    MYSQL_HOST = host
+    MYSQL_PORT = int(port)
+    MYSQL_USER = user
+    MYSQL_PASSWORD = password
+    MYSQL_DATABASE = database
+
+    # 3. Persist to .env
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    env_path = os.path.join(base_dir, ".env")
+    
+    lines = []
+    if os.path.exists(env_path):
+        with open(env_path, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+            
+    # Keys we want to rewrite/add
+    new_values = {
+        "DB_TYPE": DB_TYPE,
+        "MYSQL_HOST": MYSQL_HOST,
+        "MYSQL_PORT": str(MYSQL_PORT),
+        "MYSQL_USER": MYSQL_USER,
+        "MYSQL_PASSWORD": MYSQL_PASSWORD,
+        "MYSQL_DATABASE": MYSQL_DATABASE
+    }
+    
+    updated_lines = []
+    keys_written = set()
+    
+    for line in lines:
+        stripped = line.strip()
+        if stripped and not stripped.startswith("#") and "=" in stripped:
+            parts = stripped.split("=", 1)
+            key = parts[0].strip()
+            if key in new_values:
+                updated_lines.append(f"{key} = \"{new_values[key]}\"\n")
+                keys_written.add(key)
+                continue
+        updated_lines.append(line)
+        
+    for key, val in new_values.items():
+        if key not in keys_written:
+            updated_lines.append(f"{key} = \"{val}\"\n")
+            
+    with open(env_path, "w", encoding="utf-8") as f:
+        f.writelines(updated_lines)
+
+    # 4. Force reload
+    load_dotenv(override=True)
+
+
 if __name__ == "__main__":
     print("Testing database connector...")
     try:
@@ -235,3 +299,4 @@ if __name__ == "__main__":
         print(df)
     except Exception as e:
         print("Connection failed:", e)
+
