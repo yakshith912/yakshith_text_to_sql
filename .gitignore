@@ -21,6 +21,7 @@ env/
 .idea/
 *.swp
 *.swo
+.gemini/
 
 # OS
 .DS_Store
@@ -29,5 +30,5 @@ Thumbs.db
 # Logs
 *.log
 
-# SQLite databases
-*.db
+# SQLite databases (auto-generated from CSV seed data)
+data/*.db

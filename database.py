@@ -4,10 +4,16 @@ import subprocess
 import time
 from typing import Tuple
 from dotenv import load_dotenv
-import mysql.connector
 import pandas as pd
 
 load_dotenv()
+
+# Try importing MySQL connector — not available/needed on all platforms (e.g. Render with SQLite)
+try:
+    import mysql.connector
+    MYSQL_AVAILABLE = True
+except ImportError:
+    MYSQL_AVAILABLE = False
 
 # MySQL configuration
 MYSQL_HOST     = os.getenv("MYSQL_HOST", "127.0.0.1")
@@ -17,7 +23,7 @@ MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "")
 MYSQL_DATABASE = os.getenv("MYSQL_DATABASE", "aaitech")
 
 # Connection cache and active database type selector ('mysql' or 'sqlite')
-DB_TYPE = "mysql"
+DB_TYPE = os.getenv("DB_TYPE", "mysql").lower()
 _conn = None
 
 
@@ -42,13 +48,14 @@ def _is_connected() -> bool:
     if _conn is None:
         return False
     if DB_TYPE == "mysql":
+        if not MYSQL_AVAILABLE:
+            return False
         try:
             return _conn.is_connected()
         except Exception:
             return False
     elif DB_TYPE == "sqlite":
         try:
-            # SQLite connections don't have is_connected, but we can verify by running a dummy select
             _conn.execute("SELECT 1")
             return True
         except Exception:
@@ -57,6 +64,8 @@ def _is_connected() -> bool:
 
 
 def _create_connection(timeout: int = 5):
+    if not MYSQL_AVAILABLE:
+        raise RuntimeError("mysql-connector-python is not installed")
     return mysql.connector.connect(
         host=MYSQL_HOST,
         port=MYSQL_PORT,
@@ -67,6 +76,14 @@ def _create_connection(timeout: int = 5):
     )
 
 
+def _get_sqlite_path() -> str:
+    """Get the path for the SQLite database file."""
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    db_dir = os.path.join(base_dir, "data")
+    os.makedirs(db_dir, exist_ok=True)
+    return os.path.join(db_dir, "aaitech.db")
+
+
 def _initialize_sqlite_db(conn):
     """Seed SQLite database tables from static CSV files if not already done."""
     try:
@@ -75,7 +92,7 @@ def _initialize_sqlite_db(conn):
         exists = cursor.fetchone()
         
         if not exists:
-            print("SQLite: Seed tables not found. Seeding SQLite fallback database from CSV files...")
+            print("SQLite: Seeding database from CSV files...")
             base_dir = os.path.dirname(os.path.abspath(__file__))
             csv_files = {
                 "customers": os.path.join(base_dir, "data", "customers.csv"),
@@ -85,78 +102,99 @@ def _initialize_sqlite_db(conn):
                 "order_details": os.path.join(base_dir, "data", "order_details.csv"),
             }
             
+            loaded = 0
             for table_name, path in csv_files.items():
                 if os.path.exists(path):
                     df = pd.read_csv(path)
                     df.to_sql(table_name, conn, if_exists='replace', index=False)
-                    print(f"SQLite: Populated table '{table_name}' with {len(df)} rows.")
+                    loaded += 1
+                    print(f"  ✓ {table_name}: {len(df)} rows")
                 else:
-                    print(f"SQLite Warning: Static CSV data file not found at {path}")
+                    print(f"  ✗ {table_name}: CSV not found at {path}")
             conn.commit()
+            print(f"SQLite: {loaded}/5 tables loaded successfully.")
+        else:
+            print("SQLite: Tables already exist, skipping seed.")
     except Exception as e:
-        print(f"SQLite Database Seeding failed: {e}")
+        print(f"SQLite seeding error: {e}")
+
+
+def _connect_sqlite():
+    """Create and return a SQLite connection."""
+    global _conn, DB_TYPE
+    DB_TYPE = "sqlite"
+    db_path = _get_sqlite_path()
+    _conn = sqlite3.connect(db_path, check_same_thread=False)
+    _initialize_sqlite_db(_conn)
+    return _conn
 
 
 def get_connection(auto_start: bool = True):
-    """Create and return a active connection (MySQL with automatic SQLite fallback)."""
+    """Create and return an active connection (MySQL with automatic SQLite fallback)."""
     global _conn, DB_TYPE
     if _is_connected():
         return _conn
+
+    # Bypass MySQL if explicitly set to SQLite or on Render with localhost MySQL
+    bypass_mysql = False
+    if DB_TYPE == "sqlite":
+        bypass_mysql = True
+    elif not MYSQL_AVAILABLE:
+        bypass_mysql = True
+    elif os.getenv("RENDER") == "true" and MYSQL_HOST in ("127.0.0.1", "localhost"):
+        bypass_mysql = True
+
+    if bypass_mysql:
+        print("Using SQLite database (MySQL bypassed).")
+        try:
+            return _connect_sqlite()
+        except Exception as sqlite_err:
+            raise RuntimeError(f"SQLite connection failed: {sqlite_err}")
 
     # 1. Attempt MySQL connection
     try:
         _conn = _create_connection(timeout=4)
         DB_TYPE = "mysql"
-        print("Connected to MySQL Database.")
+        print("Connected to MySQL.")
         return _conn
     except Exception as mysql_err:
-        # If MySQL connection fails, try auto-starting local MySQL once (if local)
+        # Try auto-starting local MySQL (Windows/XAMPP only)
         if auto_start and "2003" in str(mysql_err) and os.name == 'nt':
             try:
                 _try_start_mysql()
                 _conn = _create_connection(timeout=5)
                 DB_TYPE = "mysql"
-                print("Connected to MySQL Database after auto-start.")
+                print("Connected to MySQL after auto-start.")
                 return _conn
             except Exception:
                 pass
                 
-        # 2. Fall back to local SQLite database
-        print(f"MySQL Connection failed ({mysql_err}). Falling back to local SQLite Database...")
+        # 2. Fall back to SQLite
+        print(f"MySQL unavailable ({mysql_err}). Falling back to SQLite...")
         try:
-            DB_TYPE = "sqlite"
-            db_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
-            os.makedirs(db_dir, exist_ok=True)
-            db_path = os.path.join(db_dir, "aaitech.db")
-            
-            _conn = sqlite3.connect(db_path, check_same_thread=False)
-            _initialize_sqlite_db(_conn)
-            return _conn
+            return _connect_sqlite()
         except Exception as sqlite_err:
-            raise RuntimeError(f"Database Error: Failed to connect to MySQL AND SQLite fallback: {sqlite_err}")
+            raise RuntimeError(f"All databases failed. MySQL: {mysql_err} | SQLite: {sqlite_err}")
 
 
 def execute_query(query: str) -> pd.DataFrame:
-    """Execute a SQL query (MySQL or SQLite) and return results as a DataFrame."""
+    """Execute a SQL query and return results as a DataFrame."""
     conn = get_connection()
     global DB_TYPE
     
     if DB_TYPE == "sqlite":
         try:
-            # SQLite does not support some MySQL specific DDLs or keywords, so clean simple conversions if any
-            # For query parsing, standard SQLite handles standard SQL queries cleanly
             return pd.read_sql_query(query, conn)
         except Exception as e:
-            raise RuntimeError(f"SQLite Query execution failed: {e}")
+            raise RuntimeError(f"SQLite query failed: {e}")
     else:
-        # MySQL
         cursor = conn.cursor(dictionary=True)
         try:
             cursor.execute(query)
             rows = cursor.fetchall()
             return pd.DataFrame(rows)
         except Exception as e:
-            raise RuntimeError(f"MySQL Query execution failed: {e}")
+            raise RuntimeError(f"MySQL query failed: {e}")
         finally:
             cursor.close()
 
@@ -171,12 +209,12 @@ def get_db_type() -> str:
 def get_connection_status() -> Tuple[bool, str]:
     """Return (reachable, status_message)."""
     try:
-        conn = get_connection(auto_start=False)
+        get_connection(auto_start=False)
         global DB_TYPE
         if DB_TYPE == "mysql":
             return True, "MySQL Connected"
         else:
-            return True, "SQLite Fallback Active"
+            return True, "SQLite Active"
     except Exception as exc:
         return False, str(exc)
 
@@ -188,12 +226,12 @@ def test_connection() -> bool:
 
 
 if __name__ == "__main__":
-    print("Testing dual database connector...")
+    print("Testing database connector...")
     try:
         db_type = get_db_type()
-        print(f"Active DB Type: {db_type}")
+        print(f"Active DB: {db_type}")
         df = execute_query("SELECT * FROM customers LIMIT 5;")
-        print("Sample customers:")
+        print(f"Customers sample ({len(df)} rows):")
         print(df)
     except Exception as e:
-        print("Test Connection failed:", e)
+        print("Connection failed:", e)

@@ -176,6 +176,47 @@ html,body,[data-testid="stAppViewContainer"]{
 @keyframes pulse-dot{0%,100%{opacity:1;}50%{opacity:0.4;}}
 @keyframes glow{0%,100%{box-shadow:0 0 10px rgba(16,185,129,0.3);}50%{box-shadow:0 0 25px rgba(16,185,129,0.6);}}
 hr{border-color:rgba(16,185,129,0.08)!important;}
+
+/* ── Dashboard Enhanced Styles ── */
+.upload-zone{
+    background:rgba(16,185,129,0.03);border:2px dashed rgba(16,185,129,0.2);
+    border-radius:16px;padding:2rem;text-align:center;transition:all 0.3s;
+    cursor:pointer;
+}
+.upload-zone:hover{border-color:rgba(16,185,129,0.5);background:rgba(16,185,129,0.06);}
+.action-toolbar{
+    display:flex;gap:0.4rem;flex-wrap:wrap;margin:0.5rem 0;
+}
+.action-btn{
+    display:inline-flex;align-items:center;gap:4px;
+    background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);
+    border-radius:8px;padding:0.35rem 0.7rem;font-size:0.72rem;
+    color:#94A3B8;font-weight:600;cursor:pointer;transition:all 0.2s;
+}
+.action-btn:hover{background:rgba(16,185,129,0.1);color:#10B981;border-color:rgba(16,185,129,0.3);}
+.rec-badge{
+    display:inline-flex;align-items:center;gap:5px;
+    background:linear-gradient(135deg,rgba(139,92,246,0.1),rgba(16,185,129,0.08));
+    border:1px solid rgba(139,92,246,0.25);
+    border-radius:20px;padding:0.3rem 0.8rem;font-size:0.72rem;
+    color:#A78BFA;font-weight:600;margin:0.2rem;transition:all 0.2s;
+}
+.rec-badge:hover{background:linear-gradient(135deg,rgba(139,92,246,0.2),rgba(16,185,129,0.15));transform:scale(1.02);}
+.col-drill{
+    background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);
+    border-radius:10px;padding:0.8rem;margin-bottom:0.4rem;transition:all 0.2s;
+}
+.col-drill:hover{border-color:rgba(16,185,129,0.2);background:rgba(16,185,129,0.03);}
+.sparkline-box{
+    background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);
+    border-radius:8px;padding:0.4rem;margin-top:0.3rem;
+}
+@keyframes shimmer{0%{background-position:-200% 0;}100%{background-position:200% 0;}}
+.loading-shimmer{
+    background:linear-gradient(90deg,rgba(16,185,129,0.05) 25%,rgba(16,185,129,0.12) 50%,rgba(16,185,129,0.05) 75%);
+    background-size:200% 100%;animation:shimmer 1.5s ease-in-out infinite;
+    border-radius:8px;height:20px;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -213,14 +254,15 @@ with st.sidebar:
     """, unsafe_allow_html=True)
 
     # DB status (auto-check)
-    _db_ok = test_connection()
+    from database import get_connection_status
+    _db_ok, _db_msg = get_connection_status()
     st.session_state.db_status = _db_ok
     _dot = "status-dot-green" if _db_ok else "status-dot-red"
-    _stxt = "Connected" if _db_ok else "Offline"
+    _stxt = _db_msg if _db_ok else "Offline"
     st.markdown(f"""
     <div style="padding:0.4rem 1rem 0.6rem;">
         <span class="{_dot}"></span>
-        <span style="font-size:0.76rem;color:#64748B!important;">Database {_stxt}</span>
+        <span style="font-size:0.76rem;color:#64748B!important;">{_stxt}</span>
     </div>""", unsafe_allow_html=True)
     if not _db_ok:
         st.markdown(f'<div style="padding:0 1rem 0.6rem;font-size:0.72rem;color:#EF4444!important;">Database is offline.</div>', unsafe_allow_html=True)
@@ -644,6 +686,42 @@ elif _page == "📊 Dashboard":
         st.session_state.dataset_sqlite_conn = sqlite3.connect(":memory:", check_same_thread=False)
         st.session_state.dataset_sqlite_conn.row_factory = sqlite3.Row
 
+    # ── Dataset Upload Section ────────────────────────────────────────────────
+    st.markdown("""<div class='section-label'>Upload Datasets</div>""", unsafe_allow_html=True)
+    uploaded_files = st.file_uploader(
+        "Select CSV or Excel files",
+        type=["csv", "xlsx"],
+        accept_multiple_files=True,
+        key="dashboard_uploads",
+    )
+    if uploaded_files:
+        for f in uploaded_files:
+            try:
+                if f.name.lower().endswith('.csv'):
+                    df = pd.read_csv(f)
+                else:
+                    df = pd.read_excel(f)
+                table_name = f.name.rsplit(".", 1)[0]
+                st.session_state.uploaded_datasets[table_name] = df
+                # Load into in‑memory SQLite for SQL queries
+                df.to_sql(table_name, st.session_state.dataset_sqlite_conn, if_exists='replace', index=False)
+                st.toast(f"✅ Uploaded & indexed `{table_name}` ({len(df)} rows)", icon="✅")
+            except Exception as e:
+                st.toast(f"❌ Failed to load `{f.name}`: {e}", icon="❌")
+    # Show list of uploaded datasets
+    if st.session_state.uploaded_datasets:
+        st.markdown("""<div class='section-label'>Available Datasets</div>""", unsafe_allow_html=True)
+        for name, df in st.session_state.uploaded_datasets.items():
+            with st.expander(name, expanded=False):
+                st.dataframe(df.head(10), hide_index=True, use_container_width=True)
+                st.download_button(
+                    label="Download CSV",
+                    data=df.to_csv(index=False).encode(),
+                    file_name=f"{name}.csv",
+                    mime="text/csv",
+                )
+
+
     # ── Overhauled Dashboard Page Header ──────────────────────────────────────
     st.markdown("""
     <div style="background:linear-gradient(135deg,#0D0D14 0%,#1A1A2E 60%,#16213E 100%);
@@ -946,40 +1024,93 @@ elif _page == "📊 Dashboard":
             st.info("Make sure MySQL is running. Use the sidebar DB status indicator.")
 
     # ══════════════════════════════════════════════════════════════════════════
-    # SUB-TAB 2: Multi-Dataset File Analyzer (Custom CSV/Excel workspace)
+    # SUB-TAB 2: Multi-Dataset File Analyzer (Enhanced)
     # ══════════════════════════════════════════════════════════════════════════
     with _sub_tabs[1]:
+        # ── Workspace Header ──
         st.markdown("""
-        <div class="glass-card" style="margin-bottom:1.5rem; padding: 1.2rem;">
-            <h4 style="margin:0 0 0.5rem;color:#10B981!important;">📁 Custom Dataset Workspace</h4>
-            <p style="font-size:0.85rem;color:#94A3B8;margin:0;">
-                Upload, manage, and analyze your CSV or Excel files. Join tables, slice data with column filters, build custom Plotly charts, and query datasets in natural language using the AI SQL Copilot.
-            </p>
+        <div style="background:linear-gradient(135deg,rgba(16,185,129,0.06) 0%,rgba(139,92,246,0.04) 50%,rgba(245,158,11,0.03) 100%);
+            border:1px solid rgba(16,185,129,0.2);border-radius:16px;
+            padding:1.5rem 2rem;margin-bottom:1.5rem;position:relative;overflow:hidden;">
+            <div style="position:absolute;top:-30px;right:-30px;width:200px;height:200px;
+                background:radial-gradient(circle,rgba(139,92,246,0.08) 0%,transparent 70%);
+                pointer-events:none;"></div>
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:0.5rem;">
+                <div style="width:42px;height:42px;background:linear-gradient(135deg,#10B981,#8B5CF6);
+                    border-radius:12px;display:flex;align-items:center;justify-content:center;
+                    font-size:1.3rem;flex-shrink:0;">📁</div>
+                <div>
+                    <div style="font-size:1.2rem;font-weight:800;
+                        background:linear-gradient(90deg,#FFFFFF 0%,#10B981 60%,#8B5CF6 100%);
+                        -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+                        background-clip:text;">Multi-Dataset Analytics Workspace</div>
+                    <div style="font-size:0.78rem;color:#64748B;">
+                        Upload · Preview · Merge · Filter · Visualize · AI Analysis · Export
+                    </div>
+                </div>
+            </div>
+            <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.6rem;">
+                <span style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.25);
+                    border-radius:20px;padding:0.2rem 0.7rem;font-size:0.7rem;
+                    color:#10B981;font-weight:600;">CSV &amp; Excel</span>
+                <span style="background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.25);
+                    border-radius:20px;padding:0.2rem 0.7rem;font-size:0.7rem;
+                    color:#8B5CF6;font-weight:600;">AI-Powered Insights</span>
+                <span style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.25);
+                    border-radius:20px;padding:0.2rem 0.7rem;font-size:0.7rem;
+                    color:#F59E0B;font-weight:600;">Interactive Charts</span>
+                <span style="background:rgba(14,165,233,0.1);border:1px solid rgba(14,165,233,0.25);
+                    border-radius:20px;padding:0.2rem 0.7rem;font-size:0.7rem;
+                    color:#0EA5E9;font-weight:600;">Cross-Dataset Analysis</span>
+                <span style="background:rgba(236,72,153,0.1);border:1px solid rgba(236,72,153,0.25);
+                    border-radius:20px;padding:0.2rem 0.7rem;font-size:0.7rem;
+                    color:#EC4899;font-weight:600;">Excel Export</span>
+            </div>
         </div>
         """, unsafe_allow_html=True)
 
-        # 1. FILE UPLOAD & MANAGEMENT SECTION
+        # ── 1. FILE UPLOAD & MANAGEMENT ──
         _up_col1, _up_col2 = st.columns([1, 1])
         with _up_col1:
-            st.markdown('<div class="glass-card" style="height:100%; padding:1.2rem;">', unsafe_allow_html=True)
-            st.markdown('<span style="font-size:0.9rem;font-weight:700;color:#F1F5F9;display:block;margin-bottom:0.6rem;">⚡ Upload Datasets</span>', unsafe_allow_html=True)
+            st.markdown("""
+            <div class="glass-card" style="padding:1.2rem;min-height:240px;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:0.8rem;">
+                    <div style="width:32px;height:32px;background:rgba(16,185,129,0.15);
+                        border:1px solid rgba(16,185,129,0.3);border-radius:8px;
+                        display:flex;align-items:center;justify-content:center;font-size:1rem;">⚡</div>
+                    <span style="font-size:0.9rem;font-weight:700;color:#F1F5F9;">Upload Datasets</span>
+                </div>
+                <div style="font-size:0.78rem;color:#64748B;margin-bottom:0.8rem;">
+                    Drag and drop CSV or Excel files (max 50MB each). Each file becomes a queryable table.
+                </div>
+            """, unsafe_allow_html=True)
             _uploaded_files = st.file_uploader(
-                "Upload CSV or Excel files", 
-                type=["csv", "xlsx"], 
+                "Upload CSV or Excel files",
+                type=["csv", "xlsx"],
                 accept_multiple_files=True,
                 key="ds_uploader",
                 label_visibility="collapsed"
             )
-            
+
             if _uploaded_files:
                 for _f in _uploaded_files:
                     _fname = _f.name
                     if _fname not in st.session_state.uploaded_datasets:
+                        # Validate file size (50MB limit)
+                        _f.seek(0, 2)
+                        _fsize = _f.tell()
+                        _f.seek(0)
+                        if _fsize > 50 * 1024 * 1024:
+                            st.error(f"'{_fname}' exceeds 50MB limit ({round(_fsize/1024/1024,1)}MB)")
+                            continue
                         try:
                             if _fname.endswith(".csv"):
                                 _df_file = pd.read_csv(_f)
                             else:
                                 _df_file = pd.read_excel(_f)
+                            if _df_file.empty:
+                                st.warning(f"'{_fname}' is empty — skipped.")
+                                continue
                             # Clean column names to be SQL-safe
                             _clean_cols = {}
                             for _col in _df_file.columns:
@@ -988,107 +1119,352 @@ elif _page == "📊 Dashboard":
                                     _clean_name = '_' + _clean_name
                                 _clean_cols[_col] = _clean_name
                             _df_file = _df_file.rename(columns=_clean_cols)
-                            
+
                             st.session_state.uploaded_datasets[_fname] = _df_file
-                            # Load into in-memory SQLite database
                             _tbl_name = re.sub(r'[^a-zA-Z0-9_]', '_', _fname.split('.')[0]).lower()
                             _df_file.to_sql(_tbl_name, st.session_state.dataset_sqlite_conn, if_exists='replace', index=False)
-                            st.toast(f"Successfully loaded '{_fname}' as '{_tbl_name}' table!", icon="✓")
+                            _fsize_str = f"{round(_fsize/1024,1)} KB" if _fsize < 1048576 else f"{round(_fsize/1048576,1)} MB"
+                            st.toast(f"✅ '{_fname}' loaded → '{_tbl_name}' ({len(_df_file):,} rows · {_fsize_str})", icon="✅")
                         except Exception as _ue:
                             st.error(f"Error parsing '{_fname}': {_ue}")
             st.markdown('</div>', unsafe_allow_html=True)
 
         with _up_col2:
-            st.markdown('<div class="glass-card" style="height:100%; padding:1.2rem;">', unsafe_allow_html=True)
-            st.markdown('<span style="font-size:0.9rem;font-weight:700;color:#F1F5F9;display:block;margin-bottom:0.6rem;">📋 Loaded Datasets</span>', unsafe_allow_html=True)
-            
+            st.markdown("""
+            <div class="glass-card" style="padding:1.2rem;min-height:240px;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:0.8rem;">
+                    <div style="width:32px;height:32px;background:rgba(139,92,246,0.15);
+                        border:1px solid rgba(139,92,246,0.3);border-radius:8px;
+                        display:flex;align-items:center;justify-content:center;font-size:1rem;">📋</div>
+                    <span style="font-size:0.9rem;font-weight:700;color:#F1F5F9;">Loaded Datasets</span>
+                    <span style="background:rgba(16,185,129,0.15);color:#10B981;font-size:0.68rem;
+                        font-weight:700;padding:0.15rem 0.5rem;border-radius:10px;margin-left:auto;">""" + str(len(st.session_state.uploaded_datasets)) + """ loaded</span>
+                </div>
+            """, unsafe_allow_html=True)
+
             if not st.session_state.uploaded_datasets:
-                st.info("No datasets uploaded yet. Upload CSV or Excel files to begin analysis.")
+                st.markdown("""
+                <div style="text-align:center;padding:1.5rem 0;">
+                    <div style="font-size:2.5rem;margin-bottom:0.5rem;opacity:0.4;">📂</div>
+                    <div style="font-size:0.85rem;color:#475569;font-weight:600;">No datasets yet</div>
+                    <div style="font-size:0.75rem;color:#334155;margin-top:0.2rem;">Upload CSV or Excel files to begin</div>
+                </div>
+                """, unsafe_allow_html=True)
             else:
-                # List loaded datasets
                 _ds_list = []
                 for _name, _df in st.session_state.uploaded_datasets.items():
                     _tbl_name = re.sub(r'[^a-zA-Z0-9_]', '_', _name.split('.')[0]).lower()
+                    _mem = _df.memory_usage(deep=True).sum()
+                    _mem_str = f"{round(_mem/1024,1)}KB" if _mem < 1048576 else f"{round(_mem/1048576,1)}MB"
                     _ds_list.append({
-                        "File Name": _name,
-                        "Table Name": _tbl_name,
-                        "Rows": f"{len(_df):,}",
-                        "Cols": f"{len(_df.columns)}"
+                        "📄 File": _name,
+                        "🗃️ Table": _tbl_name,
+                        "📊 Rows": f"{len(_df):,}",
+                        "📐 Cols": str(len(_df.columns)),
+                        "💾 Size": _mem_str
                     })
-                
-                _df_ds_list = pd.DataFrame(_ds_list)
-                st.dataframe(_df_ds_list, use_container_width=True, hide_index=True)
-                
-                # Delete manager
-                _del_sel = st.selectbox("Select dataset to delete:", list(st.session_state.uploaded_datasets.keys()), key="del_ds_sel")
-                if st.button("🗑️ Delete Selected Dataset", use_container_width=True):
-                    if _del_sel in st.session_state.uploaded_datasets:
-                        del st.session_state.uploaded_datasets[_del_sel]
-                        st.toast(f"Deleted dataset '{_del_sel}'", icon="🗑️")
-                        st.rerun()
+                st.dataframe(pd.DataFrame(_ds_list), use_container_width=True, hide_index=True)
+
+                _del_c1, _del_c2 = st.columns([3, 1])
+                with _del_c1:
+                    _del_sel = st.selectbox("Remove:", list(st.session_state.uploaded_datasets.keys()), key="del_ds_sel", label_visibility="collapsed")
+                with _del_c2:
+                    if st.button("🗑️ Delete", use_container_width=True, key="del_ds_btn"):
+                        if _del_sel in st.session_state.uploaded_datasets:
+                            del st.session_state.uploaded_datasets[_del_sel]
+                            st.toast(f"Removed '{_del_sel}'", icon="🗑️")
+                            st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
 
         st.markdown("<br>", unsafe_allow_html=True)
 
+        # ══════════════════════════════════════════════════════════════════════
+        # ALL SECTIONS BELOW REQUIRE AT LEAST 1 UPLOADED DATASET
+        # ══════════════════════════════════════════════════════════════════════
         if st.session_state.uploaded_datasets:
-            # 2. DATASET EXPLORER & PREVIEW SECTION
-            st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #10B981;padding-left:0.6rem;">🔍 Dataset Previews &amp; Schema Inspector</p>', unsafe_allow_html=True)
-            st.markdown('<div class="glass-card" style="padding:1.2rem;">', unsafe_allow_html=True)
-            
-            _active_ds = st.selectbox("Choose dataset to explore:", list(st.session_state.uploaded_datasets.keys()), key="active_ds_explorer")
-            _df_active = st.session_state.uploaded_datasets[_active_ds]
-            
-            _pv_col1, _pv_col2, _pv_col3 = st.columns([1, 1, 1])
-            with _pv_col1:
-                st.markdown(f'<div class="kpi-tile"><div class="kpi-tile-val">{len(_df_active):,}</div><div class="kpi-tile-lbl">Rows</div></div>', unsafe_allow_html=True)
-            with _pv_col2:
-                st.markdown(f'<div class="kpi-tile"><div class="kpi-tile-val">{len(_df_active.columns)}</div><div class="kpi-tile-lbl">Columns</div></div>', unsafe_allow_html=True)
-            with _pv_col3:
-                _mem = round(_df_active.memory_usage(deep=True).sum() / 1024, 1)
-                _mem_str = f"{_mem:,} KB" if _mem < 1024 else f"{round(_mem/1024, 2):,} MB"
-                st.markdown(f'<div class="kpi-tile"><div class="kpi-tile-val">{_mem_str}</div><div class="kpi-tile-lbl">Size</div></div>', unsafe_allow_html=True)
-                
+
+            # ── 2. AUTO-GENERATED DATASET INSIGHTS (KPI SUMMARY CARDS + SPARKLINES) ──
+            st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #10B981;padding-left:0.6rem;">⚡ Dataset Overview &amp; Auto-Insights</p>', unsafe_allow_html=True)
+
+            _insight_ds = st.selectbox("Select dataset for insights:", list(st.session_state.uploaded_datasets.keys()), key="insight_ds_sel")
+            _df_ins = st.session_state.uploaded_datasets[_insight_ds]
+            _num_cols_ins = _df_ins.select_dtypes(include='number').columns.tolist()
+            _cat_cols_ins = _df_ins.select_dtypes(exclude='number').columns.tolist()
+            _total_cells = _df_ins.shape[0] * _df_ins.shape[1]
+            _total_missing = int(_df_ins.isna().sum().sum())
+            _completeness = round((1 - _total_missing / _total_cells) * 100, 1) if _total_cells > 0 else 0
+            _mem_ins = _df_ins.memory_usage(deep=True).sum()
+            _mem_ins_str = f"{round(_mem_ins/1024,1)} KB" if _mem_ins < 1048576 else f"{round(_mem_ins/1048576,2)} MB"
+            _dup_rows = int(_df_ins.duplicated().sum())
+
+            # KPI Row
+            _ik = st.columns(6)
+            _insight_kpis = [
+                (_ik[0], C1, "&#128202;", "Total Rows",     f"{len(_df_ins):,}",           "Records in dataset"),
+                (_ik[1], C2, "&#128203;", "Columns",         f"{len(_df_ins.columns)}",     f"{len(_num_cols_ins)} numeric · {len(_cat_cols_ins)} text"),
+                (_ik[2], C3, "&#9989;",   "Completeness",    f"{_completeness}%",           f"{_total_missing:,} missing cells"),
+                (_ik[3], C4, "&#128260;", "Duplicates",      f"{_dup_rows:,}",              "Duplicate rows found"),
+                (_ik[4], C5, "&#128190;", "Memory",          _mem_ins_str,                  "In-memory size"),
+                (_ik[5], C1, "&#128290;", "Unique Ratio",    f"{round(_df_ins.nunique().mean(),1)}",  "Avg unique/column"),
+            ]
+            for _col, _clr, _ico, _lbl, _val, _sub in _insight_kpis:
+                with _col:
+                    st.markdown(f"""
+                    <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);
+                        border-top:3px solid {_clr};border-radius:12px;padding:0.8rem 0.6rem;
+                        text-align:center;transition:all 0.2s;">
+                        <div style="font-size:1.1rem;margin-bottom:0.2rem;">{_ico}</div>
+                        <div style="font-size:0.65rem;font-weight:700;color:#64748B;
+                            text-transform:uppercase;letter-spacing:0.08em;">{_lbl}</div>
+                        <div style="font-size:1.3rem;font-weight:800;color:{_clr};
+                            line-height:1.1;margin:0.15rem 0;">{_val}</div>
+                        <div style="font-size:0.62rem;color:#475569;">{_sub}</div>
+                    </div>""", unsafe_allow_html=True)
+
+            # ── Auto-Summary Text ──
+            _auto_summary_parts = []
+            _auto_summary_parts.append(f"This dataset contains **{len(_df_ins):,} rows** and **{len(_df_ins.columns)} columns** ({len(_num_cols_ins)} numeric, {len(_cat_cols_ins)} categorical).")
+            if _completeness == 100:
+                _auto_summary_parts.append("Data quality is **excellent** — no missing values detected.")
+            elif _completeness >= 90:
+                _auto_summary_parts.append(f"Data quality is **good** — {_completeness}% complete with {_total_missing:,} missing cells.")
+            else:
+                _auto_summary_parts.append(f"⚠️ Data quality **needs attention** — only {_completeness}% complete ({_total_missing:,} missing cells).")
+            if _dup_rows > 0:
+                _auto_summary_parts.append(f"Found **{_dup_rows:,} duplicate rows** — consider deduplication.")
+            if _num_cols_ins:
+                _top_num = _num_cols_ins[0]
+                _auto_summary_parts.append(f"Top numeric column: `{_top_num}` (mean: {_df_ins[_top_num].mean():.2f}, range: {_df_ins[_top_num].min():.2f}–{_df_ins[_top_num].max():.2f}).")
+
+            st.markdown(f"""
+            <div style="background:linear-gradient(90deg,rgba(16,185,129,0.06),rgba(139,92,246,0.04));
+                border:1px solid rgba(16,185,129,0.15);border-radius:10px;
+                padding:0.8rem 1.2rem;margin:0.8rem 0;font-size:0.82rem;">
+                <span style="color:#10B981;font-weight:700;">&#10022; Auto-Summary</span>
+                <span style="color:#94A3B8;display:block;margin-top:0.3rem;line-height:1.7;">
+                    {" ".join(_auto_summary_parts)}
+                </span>
+            </div>""", unsafe_allow_html=True)
+
+            # ── Sparkline Mini-Charts for Numeric Columns ──
+            if _num_cols_ins:
+                _spark_cols = st.columns(min(len(_num_cols_ins), 4))
+                for _si, _scol_name in enumerate(_num_cols_ins[:4]):
+                    with _spark_cols[_si]:
+                        _spark_data = _df_ins[_scol_name].dropna().head(50)
+                        if len(_spark_data) > 1:
+                            _spark_fig = go.Figure(go.Scatter(
+                                y=_spark_data.values, mode='lines',
+                                line=dict(color=PAL[_si % len(PAL)], width=2),
+                                fill='tozeroy',
+                                fillcolor=f"rgba({int(PAL[_si % len(PAL)][1:3],16)},{int(PAL[_si % len(PAL)][3:5],16)},{int(PAL[_si % len(PAL)][5:7],16)},0.1)"
+                            ))
+                            _spark_fig.update_layout(
+                                margin=dict(t=5, b=5, l=5, r=5), height=60,
+                                paper_bgcolor=BG, plot_bgcolor=BG,
+                                xaxis=dict(visible=False), yaxis=dict(visible=False),
+                                showlegend=False
+                            )
+                            st.markdown(f'<div style="font-size:0.68rem;font-weight:600;color:#64748B;text-align:center;margin-bottom:2px;">{_scol_name}</div>', unsafe_allow_html=True)
+                            st.plotly_chart(_spark_fig, use_container_width=True, key=f"spark_{_insight_ds}_{_scol_name}")
+
             st.markdown("<br>", unsafe_allow_html=True)
-            
-            # Columns & datatypes
-            _cols_info = []
-            for _c in _df_active.columns:
-                _dtype = str(_df_active[_c].dtype)
-                _nulls = _df_active[_c].isna().sum()
-                _uniques = _df_active[_c].nunique()
-                _cols_info.append({
-                    "Column Name": _c,
-                    "Data Type": _dtype,
-                    "Missing Values": f"{_nulls:,} ({round((_nulls/len(_df_active))*100, 1)}%)",
-                    "Unique Values": f"{_uniques:,}"
+
+            # ── 3. QUICK ACTION TOOLBAR ──
+            st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #10B981;padding-left:0.6rem;">⚡ Quick Actions</p>', unsafe_allow_html=True)
+            _qa1, _qa2, _qa3, _qa4, _qa5 = st.columns(5)
+            with _qa1:
+                _show_head = st.button("📄 Head (10)", use_container_width=True, key="qa_head")
+            with _qa2:
+                _show_tail = st.button("📄 Tail (10)", use_container_width=True, key="qa_tail")
+            with _qa3:
+                _show_describe = st.button("📊 Describe", use_container_width=True, key="qa_desc")
+            with _qa4:
+                _show_uniques = st.button("🔢 Unique Counts", use_container_width=True, key="qa_uniq")
+            with _qa5:
+                _show_nulls = st.button("🩺 Null Analysis", use_container_width=True, key="qa_nulls")
+
+            if _show_head:
+                st.markdown('<div class="glass-card" style="padding:1rem;">', unsafe_allow_html=True)
+                st.markdown(f'<span style="font-size:0.82rem;font-weight:700;color:#10B981;">First 10 rows of {_insight_ds}</span>', unsafe_allow_html=True)
+                st.dataframe(_df_ins.head(10), use_container_width=True, hide_index=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+            if _show_tail:
+                st.markdown('<div class="glass-card" style="padding:1rem;">', unsafe_allow_html=True)
+                st.markdown(f'<span style="font-size:0.82rem;font-weight:700;color:#10B981;">Last 10 rows of {_insight_ds}</span>', unsafe_allow_html=True)
+                st.dataframe(_df_ins.tail(10), use_container_width=True, hide_index=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+            if _show_describe:
+                st.markdown('<div class="glass-card" style="padding:1rem;">', unsafe_allow_html=True)
+                st.markdown(f'<span style="font-size:0.82rem;font-weight:700;color:#F59E0B;">Statistical Summary of {_insight_ds}</span>', unsafe_allow_html=True)
+                st.dataframe(_df_ins.describe(include='all').round(2), use_container_width=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+            if _show_uniques:
+                st.markdown('<div class="glass-card" style="padding:1rem;">', unsafe_allow_html=True)
+                st.markdown(f'<span style="font-size:0.82rem;font-weight:700;color:#8B5CF6;">Unique Value Counts — {_insight_ds}</span>', unsafe_allow_html=True)
+                _uniq_df = pd.DataFrame({
+                    "Column": _df_ins.columns,
+                    "Unique": [_df_ins[c].nunique() for c in _df_ins.columns],
+                    "Total": len(_df_ins),
+                    "Ratio": [f"{round(_df_ins[c].nunique()/max(len(_df_ins),1)*100,1)}%" for c in _df_ins.columns]
                 })
-            
-            _sub_tabs_preview = st.tabs(["📄 Data Preview", "📋 Column Information", "📈 Numerical Distribution"])
-            
-            with _sub_tabs_preview[0]:
-                _num_rows = st.slider("Rows to display:", 5, min(100, len(_df_active)), 10, key="ds_prev_rows")
-                st.dataframe(_df_active.head(_num_rows), use_container_width=True, hide_index=True)
-                
-            with _sub_tabs_preview[1]:
-                st.dataframe(pd.DataFrame(_cols_info), use_container_width=True, hide_index=True)
-                
-            with _sub_tabs_preview[2]:
-                _num_cols = _df_active.select_dtypes(include='number').columns.tolist()
-                if not _num_cols:
-                    st.info("No numerical columns available in this dataset to show stats.")
-                else:
-                    st.dataframe(_df_active[_num_cols].describe(), use_container_width=True)
-                    
-            st.markdown('</div>', unsafe_allow_html=True)
-            
+                st.dataframe(_uniq_df, use_container_width=True, hide_index=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+            if _show_nulls:
+                st.markdown('<div class="glass-card" style="padding:1rem;">', unsafe_allow_html=True)
+                st.markdown(f'<span style="font-size:0.82rem;font-weight:700;color:#EF4444;">Null Analysis — {_insight_ds}</span>', unsafe_allow_html=True)
+                _null_data = []
+                for _c in _df_ins.columns:
+                    _n = int(_df_ins[_c].isna().sum())
+                    _pct = round(_n / max(len(_df_ins), 1) * 100, 1)
+                    _bar = "█" * int(_pct / 5) + "░" * (20 - int(_pct / 5))
+                    _null_data.append({"Column": _c, "Missing": _n, "% Missing": f"{_pct}%", "Bar": _bar})
+                st.dataframe(pd.DataFrame(_null_data), use_container_width=True, hide_index=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+
             st.markdown("<br>", unsafe_allow_html=True)
-            
-            # 3. DYNAMIC COMBINED ANALYSIS / JOINER WORKSPACE
+
+            # ── 4. DATA QUALITY PROFILING WITH DISTRIBUTION PLOTS ──
+            st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #10B981;padding-left:0.6rem;">🔬 Data Quality Profile</p>', unsafe_allow_html=True)
+            st.markdown('<div class="glass-card" style="padding:1.2rem;">', unsafe_allow_html=True)
+
+            _quality_tabs = st.tabs(["📄 Data Preview", "📋 Column Profile", "📈 Statistics", "📊 Distributions", "🩺 Data Health"])
+
+            with _quality_tabs[0]:
+                _num_rows = st.slider("Rows to display:", 5, min(200, len(_df_ins)), 15, key="ds_prev_rows")
+                st.dataframe(_df_ins.head(_num_rows), use_container_width=True, hide_index=True)
+
+            with _quality_tabs[1]:
+                _cols_info = []
+                for _c in _df_ins.columns:
+                    _dtype = str(_df_ins[_c].dtype)
+                    _nulls = int(_df_ins[_c].isna().sum())
+                    _uniques = int(_df_ins[_c].nunique())
+                    _sample = str(_df_ins[_c].dropna().iloc[0])[:30] if not _df_ins[_c].dropna().empty else "—"
+                    _cols_info.append({
+                        "Column": _c,
+                        "Type": _dtype,
+                        "Missing": f"{_nulls:,} ({round((_nulls/len(_df_ins))*100,1)}%)" if len(_df_ins) > 0 else "0",
+                        "Unique": f"{_uniques:,}",
+                        "Sample": _sample
+                    })
+                st.dataframe(pd.DataFrame(_cols_info), use_container_width=True, hide_index=True)
+
+            with _quality_tabs[2]:
+                if not _num_cols_ins:
+                    st.info("No numerical columns in this dataset.")
+                else:
+                    st.dataframe(_df_ins[_num_cols_ins].describe().round(2), use_container_width=True)
+
+            with _quality_tabs[3]:
+                # Distribution histograms for numeric columns
+                if not _num_cols_ins:
+                    st.info("No numerical columns to plot distributions.")
+                else:
+                    _dist_cols_to_show = _num_cols_ins[:6]  # Max 6 distributions
+                    _dist_rows = [_dist_cols_to_show[i:i+3] for i in range(0, len(_dist_cols_to_show), 3)]
+                    for _drow in _dist_rows:
+                        _dcols = st.columns(len(_drow))
+                        for _di, _dcol_name in enumerate(_drow):
+                            with _dcols[_di]:
+                                _dist_data = _df_ins[_dcol_name].dropna()
+                                if len(_dist_data) > 0:
+                                    _dfig = px.histogram(
+                                        _dist_data, x=_dcol_name, nbins=25,
+                                        color_discrete_sequence=[PAL[_di % len(PAL)]],
+                                        opacity=0.85
+                                    )
+                                    _dfig.update_layout(
+                                        **LO, height=200,
+                                        title=dict(text=_dcol_name, font=dict(size=11, color="#94A3B8"), x=0.5),
+                                        xaxis=dict(showgrid=False, color="#475569", title=""),
+                                        yaxis=dict(showgrid=True, gridcolor=GRID, color="#475569", title=""),
+                                        showlegend=False
+                                    )
+                                    st.plotly_chart(_dfig, use_container_width=True, key=f"dist_{_insight_ds}_{_dcol_name}")
+
+            with _quality_tabs[4]:
+                # Data health score
+                _health_score = _completeness
+                _health_color = "#10B981" if _health_score >= 90 else "#F59E0B" if _health_score >= 70 else "#EF4444"
+                _health_label = "Excellent" if _health_score >= 90 else "Good" if _health_score >= 70 else "Needs Attention"
+
+                st.markdown(f"""
+                <div style="text-align:center;padding:1.5rem 0;">
+                    <div style="font-size:3rem;font-weight:900;color:{_health_color};line-height:1;">{_health_score}%</div>
+                    <div style="font-size:0.85rem;font-weight:700;color:{_health_color};margin-top:0.3rem;">{_health_label}</div>
+                    <div style="font-size:0.72rem;color:#475569;margin-top:0.2rem;">Data Quality Score</div>
+                </div>
+                """, unsafe_allow_html=True)
+
+                _health_items = []
+                if _total_missing == 0:
+                    _health_items.append(("✅", "No missing values", "All cells have data"))
+                elif _completeness >= 95:
+                    _health_items.append(("⚠️", f"{_total_missing:,} missing values", f"Data is {_completeness}% complete"))
+                else:
+                    _health_items.append(("❌", f"{_total_missing:,} missing values", f"Only {_completeness}% complete — consider cleaning"))
+                if _dup_rows == 0:
+                    _health_items.append(("✅", "No duplicate rows", "All records are unique"))
+                else:
+                    _health_items.append(("⚠️", f"{_dup_rows:,} duplicate rows found", "Consider deduplication"))
+                _health_items.append(("ℹ️", f"{len(_num_cols_ins)} numeric, {len(_cat_cols_ins)} categorical columns", "Column type distribution"))
+
+                for _hi_icon, _hi_title, _hi_desc in _health_items:
+                    st.markdown(f"""
+                    <div class="col-drill">
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            <span style="font-size:1.1rem;">{_hi_icon}</span>
+                            <div>
+                                <div style="font-size:0.82rem;font-weight:600;color:#E2E8F0;">{_hi_title}</div>
+                                <div style="font-size:0.72rem;color:#475569;">{_hi_desc}</div>
+                            </div>
+                        </div>
+                    </div>""", unsafe_allow_html=True)
+
+            st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown("<br>", unsafe_allow_html=True)
+
+            # ── 5. CORRELATION HEATMAP ──
+            if len(_num_cols_ins) >= 2:
+                st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #10B981;padding-left:0.6rem;">🔥 Correlation Heatmap</p>', unsafe_allow_html=True)
+                st.markdown('<div class="glass-card" style="padding:1.2rem;">', unsafe_allow_html=True)
+                st.markdown('<p style="font-size:0.8rem;color:#94A3B8;margin-bottom:0.8rem;">Pearson correlation between numeric columns. Stronger correlations are highlighted.</p>', unsafe_allow_html=True)
+
+                try:
+                    _corr = _df_ins[_num_cols_ins].corr().round(2)
+                    _heatmap_fig = go.Figure(data=go.Heatmap(
+                        z=_corr.values,
+                        x=_corr.columns.tolist(),
+                        y=_corr.columns.tolist(),
+                        colorscale=[[0,"#1E1B4B"],[0.25,"#312E81"],[0.5,"#0F172A"],[0.75,"#065F46"],[1,"#10B981"]],
+                        text=_corr.values.round(2),
+                        texttemplate="%{text}",
+                        textfont=dict(size=11, color="#E2E8F0"),
+                        hovertemplate="<b>%{x} vs %{y}</b><br>Correlation: %{z:.2f}<extra></extra>",
+                        showscale=True,
+                        colorbar=dict(tickfont=dict(color="#64748B"), title=dict(text="r", font=dict(color="#64748B")))
+                    ))
+                    _heatmap_fig.update_layout(
+                        paper_bgcolor=BG, plot_bgcolor=BG, font=FONT,
+                        height=max(280, len(_num_cols_ins) * 40),
+                        margin=dict(t=10, b=10, l=10, r=10),
+                        xaxis=dict(color="#475569", tickangle=45),
+                        yaxis=dict(color="#475569", autorange="reversed")
+                    )
+                    st.plotly_chart(_heatmap_fig, use_container_width=True)
+                except Exception as _he:
+                    st.error(f"Heatmap error: {_he}")
+
+                st.markdown('</div>', unsafe_allow_html=True)
+                st.markdown("<br>", unsafe_allow_html=True)
+
+            # ── 6. DATASET COMBINER / JOIN BUILDER ──
             if len(st.session_state.uploaded_datasets) >= 2:
                 st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #10B981;padding-left:0.6rem;">🔀 Dataset Combiner / Join Builder</p>', unsafe_allow_html=True)
                 st.markdown('<div class="glass-card" style="padding:1.2rem;">', unsafe_allow_html=True)
-                st.markdown('<p style="font-size:0.8rem;color:#94A3B8;margin-bottom:1rem;">Merge two of your uploaded datasets together horizontally on a key column.</p>', unsafe_allow_html=True)
-                
+                st.markdown('<p style="font-size:0.8rem;color:#94A3B8;margin-bottom:1rem;">Merge two uploaded datasets on a shared key column.</p>', unsafe_allow_html=True)
+
                 _join_col1, _join_col2, _join_col3 = st.columns([2, 2, 1])
                 with _join_col1:
                     _left_sel = st.selectbox("Left Dataset:", list(st.session_state.uploaded_datasets.keys()), index=0, key="join_left")
@@ -1101,42 +1477,86 @@ elif _page == "📊 Dashboard":
                     _join_how = st.selectbox("Join Type:", ["inner", "left", "right", "outer"], index=1, key="join_how")
                     st.markdown("<br>", unsafe_allow_html=True)
                     _do_join = st.button("⚡ Merge Datasets", use_container_width=True)
-                    
+
                 if _do_join:
                     if _left_sel == _right_sel:
-                        st.error("Cannot join a dataset with itself. Please select two different files.")
+                        st.error("Cannot join a dataset with itself.")
                     else:
                         try:
                             _df_l = st.session_state.uploaded_datasets[_left_sel]
                             _df_r = st.session_state.uploaded_datasets[_right_sel]
-                            
-                            # Perform pandas merge
                             _df_merged = pd.merge(_df_l, _df_r, left_on=_left_key, right_on=_right_key, how=_join_how, suffixes=('_left', '_right'))
-                            
-                            # Store in session state under new joined name
                             _mname = f"merged_{_left_sel.split('.')[0]}_{_right_sel.split('.')[0]}.csv"
                             st.session_state.uploaded_datasets[_mname] = _df_merged
-                            
-                            # Load into SQLite database
                             _tbl_m = re.sub(r'[^a-zA-Z0-9_]', '_', _mname.split('.')[0]).lower()
                             _df_merged.to_sql(_tbl_m, st.session_state.dataset_sqlite_conn, if_exists='replace', index=False)
-                            
-                            st.success(f"Successfully joined datasets! Created new table '{_tbl_m}' with {len(_df_merged):,} rows and {len(_df_merged.columns)} columns.")
-                            st.toast(f"Merged table '{_tbl_m}' added to workspace!", icon="🔀")
+                            st.success(f"Created '{_tbl_m}' — {len(_df_merged):,} rows × {len(_df_merged.columns)} columns")
+                            st.toast(f"Merged table '{_tbl_m}' ready!", icon="🔀")
                             time.sleep(1)
                             st.rerun()
                         except Exception as _je:
-                            st.error(f"Merge operation failed: {_je}")
+                            st.error(f"Merge failed: {_je}")
                 st.markdown('</div>', unsafe_allow_html=True)
                 st.markdown("<br>", unsafe_allow_html=True)
 
-            # 4. INTERACTIVE FILTER SLICER
-            st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #10B981;padding-left:0.6rem;">🎛️ Interactive Data Slicing Filters</p>', unsafe_allow_html=True)
+            # ── 7. CROSS-DATASET COMPARISON ──
+            if len(st.session_state.uploaded_datasets) >= 2:
+                st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #10B981;padding-left:0.6rem;">⚖️ Cross-Dataset Comparison</p>', unsafe_allow_html=True)
+                st.markdown('<div class="glass-card" style="padding:1.2rem;">', unsafe_allow_html=True)
+                st.markdown('<p style="font-size:0.8rem;color:#94A3B8;margin-bottom:0.8rem;">Compare key statistics side-by-side between two datasets.</p>', unsafe_allow_html=True)
+
+                _cmp_c1, _cmp_c2 = st.columns(2)
+                with _cmp_c1:
+                    _cmp_left = st.selectbox("Dataset A:", list(st.session_state.uploaded_datasets.keys()), index=0, key="cmp_left")
+                with _cmp_c2:
+                    _cmp_right_idx = min(1, len(st.session_state.uploaded_datasets) - 1)
+                    _cmp_right = st.selectbox("Dataset B:", list(st.session_state.uploaded_datasets.keys()), index=_cmp_right_idx, key="cmp_right")
+
+                _df_cmp_a = st.session_state.uploaded_datasets[_cmp_left]
+                _df_cmp_b = st.session_state.uploaded_datasets[_cmp_right]
+
+                _cmp_data = {
+                    "Metric": ["Rows", "Columns", "Numeric Cols", "Text Cols", "Missing Cells", "Duplicate Rows", "Memory"],
+                    f"📄 {_cmp_left[:20]}": [
+                        f"{len(_df_cmp_a):,}",
+                        str(len(_df_cmp_a.columns)),
+                        str(len(_df_cmp_a.select_dtypes(include='number').columns)),
+                        str(len(_df_cmp_a.select_dtypes(exclude='number').columns)),
+                        f"{int(_df_cmp_a.isna().sum().sum()):,}",
+                        f"{int(_df_cmp_a.duplicated().sum()):,}",
+                        f"{round(_df_cmp_a.memory_usage(deep=True).sum()/1024,1)} KB"
+                    ],
+                    f"📄 {_cmp_right[:20]}": [
+                        f"{len(_df_cmp_b):,}",
+                        str(len(_df_cmp_b.columns)),
+                        str(len(_df_cmp_b.select_dtypes(include='number').columns)),
+                        str(len(_df_cmp_b.select_dtypes(exclude='number').columns)),
+                        f"{int(_df_cmp_b.isna().sum().sum()):,}",
+                        f"{int(_df_cmp_b.duplicated().sum()):,}",
+                        f"{round(_df_cmp_b.memory_usage(deep=True).sum()/1024,1)} KB"
+                    ]
+                }
+                st.dataframe(pd.DataFrame(_cmp_data), use_container_width=True, hide_index=True)
+
+                _shared_cols = list(set(_df_cmp_a.columns) & set(_df_cmp_b.columns))
+                if _shared_cols:
+                    st.markdown(f"""
+                    <div style="background:rgba(14,165,233,0.06);border:1px solid rgba(14,165,233,0.2);
+                        border-radius:8px;padding:0.6rem 1rem;margin-top:0.6rem;">
+                        <span style="color:#0EA5E9;font-weight:700;font-size:0.8rem;">🔗 Shared Columns ({len(_shared_cols)}):</span>
+                        <span style="color:#94A3B8;font-size:0.78rem;margin-left:0.4rem;">{", ".join(_shared_cols[:10])}{" ..." if len(_shared_cols) > 10 else ""}</span>
+                    </div>""", unsafe_allow_html=True)
+
+                st.markdown('</div>', unsafe_allow_html=True)
+                st.markdown("<br>", unsafe_allow_html=True)
+
+            # ── 8. INTERACTIVE FILTER SLICER ──
+            st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #10B981;padding-left:0.6rem;">🎛️ Interactive Data Slicer</p>', unsafe_allow_html=True)
             st.markdown('<div class="glass-card" style="padding:1.2rem;">', unsafe_allow_html=True)
-            
-            _slice_ds = st.selectbox("Choose dataset to filter:", list(st.session_state.uploaded_datasets.keys()), key="slice_ds")
+
+            _slice_ds = st.selectbox("Dataset to filter:", list(st.session_state.uploaded_datasets.keys()), key="slice_ds")
             _df_slice = st.session_state.uploaded_datasets[_slice_ds]
-            
+
             _s1, _s2, _s3 = st.columns([2, 1, 3])
             with _s1:
                 _slice_col = st.selectbox("Column:", _df_slice.columns.tolist(), key="slice_col")
@@ -1148,15 +1568,14 @@ elif _page == "📊 Dashboard":
                 if _is_num:
                     _min_v = float(_df_slice[_slice_col].min()) if not _df_slice[_slice_col].isna().all() else 0.0
                     _max_v = float(_df_slice[_slice_col].max()) if not _df_slice[_slice_col].isna().all() else 100.0
-                    _slice_val = st.number_input("Value:", value=float((_min_v + _max_v)/2), key="slice_val_num")
+                    _slice_val = st.number_input("Value:", value=float((_min_v + _max_v) / 2), key="slice_val_num")
                 else:
                     _unq_vals = _df_slice[_slice_col].dropna().unique().tolist()
                     if len(_unq_vals) < 40:
                         _slice_val = st.selectbox("Value:", _unq_vals, key="slice_val_select")
                     else:
                         _slice_val = st.text_input("Search Term:", key="slice_val_text")
-                        
-            # Apply filter
+
             _df_filtered = _df_slice.copy()
             try:
                 if _slice_op == "==":
@@ -1177,11 +1596,823 @@ elif _page == "📊 Dashboard":
                     _df_filtered = _df_filtered[_df_filtered[_slice_col] >= float(_slice_val)]
                 elif _slice_op == "<=":
                     _df_filtered = _df_filtered[_df_filtered[_slice_col] <= float(_slice_val)]
-                    
-                st.markdown(f"<span style='color:#10B981;font-size:0.8rem;font-weight:600;'>✓ Showing {len(_df_filtered):,} of {len(_df_slice):,} rows matching filter criteria</span>", unsafe_allow_html=True)
+
+                st.markdown(f"""
+                <div style="display:flex;align-items:center;gap:8px;margin:0.4rem 0;">
+                    <span style="color:#10B981;font-size:0.8rem;font-weight:600;">✓ {len(_df_filtered):,} of {len(_df_slice):,} rows</span>
+                    <span style="color:#475569;font-size:0.72rem;">({round(len(_df_filtered)/max(len(_df_slice),1)*100,1)}% match)</span>
+                </div>""", unsafe_allow_html=True)
                 st.dataframe(_df_filtered.head(100), use_container_width=True, hide_index=True)
-                
-                # Download section
+
+                _fd1, _fd2, _fd3 = st.columns([1.5, 1.5, 4])
+                with _fd1:
+                    st.download_button(
+                        "📥 Export CSV",
+                        data=_df_filtered.to_csv(index=False),
+                        file_name=f"filtered_{_slice_ds}",
+                        mime="text/csv",
+                        use_container_width=True
+                    )
+                with _fd2:
+                    # Excel export
+                    _xl_buf = io.BytesIO()
+                    try:
+                        with pd.ExcelWriter(_xl_buf, engine='xlsxwriter') as _xlw:
+                            _df_filtered.to_excel(_xlw, index=False, sheet_name='Filtered')
+                        st.download_button(
+                            "📥 Export Excel",
+                            data=_xl_buf.getvalue(),
+                            file_name=f"filtered_{_slice_ds.replace('.csv','.xlsx').replace('.xlsx','.xlsx')}",
+                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                            use_container_width=True,
+                            key="dl_filter_xlsx"
+                        )
+                    except Exception:
+                        pass
+            except Exception as _fe:
+                st.error(f"Filter error: {_fe}")
+
+            st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown("<br>", unsafe_allow_html=True)
+
+            # ── 9. SMART CHART RECOMMENDATIONS + ENHANCED CHART BUILDER ──
+            st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #10B981;padding-left:0.6rem;">📊 Interactive Chart Builder</p>', unsafe_allow_html=True)
+            st.markdown('<div class="glass-card" style="padding:1.2rem;">', unsafe_allow_html=True)
+
+            _vis_ds = st.selectbox("Select dataset:", list(st.session_state.uploaded_datasets.keys()), key="vis_ds")
+            _df_vis = st.session_state.uploaded_datasets[_vis_ds]
+            _num_cols_vis = _df_vis.select_dtypes(include='number').columns.tolist()
+            _cat_cols_vis = _df_vis.select_dtypes(exclude='number').columns.tolist()
+
+            # Smart Chart Recommendations
+            _recs = []
+            if _num_cols_vis and _cat_cols_vis:
+                _recs.append(("📊 Bar Chart", f"{_cat_cols_vis[0]} vs {_num_cols_vis[0]}"))
+                if len(_df_vis) > 5:
+                    _recs.append(("📈 Line Chart", f"Trend of {_num_cols_vis[0]}"))
+            if len(_num_cols_vis) >= 2:
+                _recs.append(("🔵 Scatter Plot", f"{_num_cols_vis[0]} vs {_num_cols_vis[1]}"))
+            if _cat_cols_vis and _num_cols_vis:
+                _recs.append(("🍩 Pie Chart", f"Distribution of {_cat_cols_vis[0]}"))
+            if _num_cols_vis:
+                _recs.append(("📊 Histogram", f"Distribution of {_num_cols_vis[0]}"))
+
+            if _recs:
+                st.markdown('<div style="margin-bottom:0.8rem;">', unsafe_allow_html=True)
+                st.markdown('<span style="font-size:0.75rem;font-weight:700;color:#8B5CF6;">🤖 Smart Recommendations:</span>', unsafe_allow_html=True)
+                _rec_html = " ".join([f'<span class="rec-badge">{r[0]} — {r[1]}</span>' for r in _recs[:4]])
+                st.markdown(f'<div style="margin-top:0.3rem;">{_rec_html}</div>', unsafe_allow_html=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+
+            _v1, _v2, _v3, _v4 = st.columns([1.5, 1.5, 1.5, 1.5])
+            with _v1:
+                _vtype = st.selectbox("Chart Type:", [
+                    "Bar Chart", "Line Chart", "Scatter Plot", "Pie Chart",
+                    "Area Chart", "Histogram", "Box Plot"
+                ], key="vis_type")
+            with _v2:
+                _vx = st.selectbox("X-Axis:", _df_vis.columns.tolist(), key="vis_x")
+            with _v3:
+                _all_cols_vis = _df_vis.columns.tolist()
+                if _vtype in ["Histogram", "Box Plot"]:
+                    _vy_opts = _num_cols_vis if _num_cols_vis else _all_cols_vis
+                elif _vtype == "Pie Chart":
+                    _vy_opts = _all_cols_vis
+                else:
+                    _vy_opts = _num_cols_vis if _num_cols_vis else _all_cols_vis
+                if not _vy_opts:
+                    _vy_opts = ["None"]
+                _vy = st.selectbox("Y-Axis / Metric:", _vy_opts, key="vis_y")
+            with _v4:
+                _vcolor = st.selectbox("Group By (color):", ["None"] + _cat_cols_vis, key="vis_color")
+
+            # Extra options row
+            _vo1, _vo2, _vo3 = st.columns([2, 1, 3])
+            with _vo1:
+                _chart_title = st.text_input("Chart Title (optional):", "", key="vis_title", placeholder="My Custom Chart")
+            with _vo2:
+                _agg_mode = st.selectbox("Aggregation:", ["Raw", "Sum", "Mean", "Count"], key="vis_agg")
+
+            try:
+                _chart_df = _df_vis.copy()
+                # Apply aggregation if needed
+                if _agg_mode != "Raw" and _vtype in ["Bar Chart", "Line Chart", "Area Chart"] and _vy in _num_cols_vis:
+                    _group_col = _vx
+                    if _agg_mode == "Sum":
+                        _chart_df = _chart_df.groupby(_group_col, as_index=False)[_vy].sum()
+                    elif _agg_mode == "Mean":
+                        _chart_df = _chart_df.groupby(_group_col, as_index=False)[_vy].mean().round(2)
+                    elif _agg_mode == "Count":
+                        _chart_df = _chart_df.groupby(_group_col, as_index=False)[_vy].count()
+                else:
+                    _chart_df = _chart_df.head(200)
+
+                _color_arg = None if _vcolor == "None" else _vcolor
+
+                _fig = None
+                if _vtype == "Bar Chart":
+                    _fig = px.bar(_chart_df, x=_vx, y=_vy, color=_color_arg, color_discrete_sequence=PAL)
+                elif _vtype == "Line Chart":
+                    _fig = px.line(_chart_df, x=_vx, y=_vy, color=_color_arg, color_discrete_sequence=PAL, markers=True)
+                elif _vtype == "Scatter Plot":
+                    _fig = px.scatter(_chart_df, x=_vx, y=_vy, color=_color_arg, color_discrete_sequence=PAL, opacity=0.7)
+                elif _vtype == "Area Chart":
+                    _fig = px.area(_chart_df, x=_vx, y=_vy, color=_color_arg, color_discrete_sequence=PAL)
+                elif _vtype == "Pie Chart":
+                    _fig = px.pie(_chart_df, names=_vx, values=_vy, color_discrete_sequence=PAL, hole=0.45)
+                elif _vtype == "Histogram":
+                    _fig = px.histogram(_chart_df, x=_vy, nbins=30, color=_color_arg,
+                                         color_discrete_sequence=PAL, opacity=0.85)
+                elif _vtype == "Box Plot":
+                    _fig = px.box(_chart_df, x=_color_arg if _color_arg else _vx, y=_vy,
+                                  color=_color_arg, color_discrete_sequence=PAL)
+
+                if _fig is not None:
+                    _fig.update_layout(**LO, height=380)
+                    if _chart_title:
+                        _fig.update_layout(title=dict(text=_chart_title, font=dict(size=14, color="#F1F5F9"), x=0.5))
+                    if _vtype not in ["Pie Chart"]:
+                        _fig.update_layout(
+                            xaxis=dict(showgrid=False, color="#475569"),
+                            yaxis=dict(showgrid=True, gridcolor=GRID, color="#475569")
+                        )
+                    st.plotly_chart(_fig, use_container_width=True)
+                    st.markdown(f"""
+                    <div style="display:flex;align-items:center;justify-content:space-between;padding:0.4rem 0.8rem;
+                        background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);
+                        border-radius:8px;margin-top:0.3rem;">
+                        <span style="font-size:0.72rem;color:#475569;">
+                            {_vtype} · {_vis_ds} · {_agg_mode} · {len(_chart_df)} data points
+                        </span>
+                        <span style="font-size:0.68rem;color:#334155;">
+                            X: {_vx} · Y: {_vy}{f" · Color: {_vcolor}" if _vcolor != "None" else ""}
+                        </span>
+                    </div>""", unsafe_allow_html=True)
+            except Exception as _ve:
+                st.error(f"Chart error: {_ve}")
+
+            st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown("<br>", unsafe_allow_html=True)
+
+            # ── 10. AI COPILOT FOR UPLOADED DATASETS ──
+            st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #10B981;padding-left:0.6rem;">🧠 AI Copilot — Natural Language Analysis</p>', unsafe_allow_html=True)
+            st.markdown("""
+            <div class="glass-card" style="padding:1.2rem;border-top:3px solid #8B5CF6;">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:0.8rem;">
+                    <div style="width:36px;height:36px;background:linear-gradient(135deg,#8B5CF6,#6D28D9);
+                        border-radius:10px;display:flex;align-items:center;justify-content:center;
+                        font-size:1.1rem;animation:glow 3s ease-in-out infinite;">🧠</div>
+                    <div>
+                        <div style="font-size:0.9rem;font-weight:700;color:#F1F5F9;">AI Dataset Copilot</div>
+                        <div style="font-size:0.72rem;color:#64748B;">Ask questions about your data in plain English — AI writes SQL, runs it, and summarizes findings.</div>
+                    </div>
+                </div>
+            """, unsafe_allow_html=True)
+
+            # Schema context
+            _schema_desc = []
+            for _name, _df in st.session_state.uploaded_datasets.items():
+                _t_name = re.sub(r'[^a-zA-Z0-9_]', '_', _name.split('.')[0]).lower()
+                _cols_str = ", ".join(f"{_col}" for _col in _df.columns)
+                _schema_desc.append(f"Table: {_t_name} - Columns: [{_cols_str}] ({len(_df)} rows)")
+            _schema_context_str = "\n".join(_schema_desc)
+
+            with st.expander("👁️ View Schema Context (sent to AI)"):
+                st.code(_schema_context_str, language="text")
+
+            # Example queries
+            _example_queries = [
+                "Count total rows in each table",
+                "Show top 10 records by highest numeric column",
+                "Find average values grouped by first text column",
+                "What are the unique values in the first column?"
+            ]
+            st.markdown('<div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-bottom:0.6rem;">', unsafe_allow_html=True)
+            for _eq in _example_queries:
+                st.markdown(f"""<span style="display:inline-block;background:rgba(139,92,246,0.08);
+                    border:1px solid rgba(139,92,246,0.2);color:#A78BFA;font-size:0.72rem;
+                    padding:0.25rem 0.6rem;border-radius:20px;">{_eq}</span>""", unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+
+            with st.form("ds_ai_form"):
+                _ds_question = st.text_area(
+                    "Ask the AI Copilot:",
+                    placeholder="e.g. Find the average sales grouped by category...\ne.g. What is the total quantity ordered per product?",
+                    key="ds_ai_q",
+                    height=100
+                )
+                _ds_sub = st.form_submit_button("⚡ Analyze with AI Copilot", use_container_width=True)
+
+            if _ds_sub and _ds_question.strip():
+                with st.spinner("🧠 AI is analyzing your datasets..."):
+                    try:
+                        _ds_sql = query_uploaded_datasets(_ds_question.strip(), _schema_context_str)
+
+                        st.markdown('<span style="font-size:0.8rem;font-weight:700;color:#8B5CF6;">Generated SQLite Query</span>', unsafe_allow_html=True)
+                        st.code(_ds_sql, language="sql")
+
+                        _df_res = pd.read_sql_query(_ds_sql, st.session_state.dataset_sqlite_conn)
+
+                        if _df_res is not None and not _df_res.empty:
+                            # Results KPIs
+                            _rk1, _rk2, _rk3 = st.columns(3)
+                            with _rk1:
+                                st.markdown(f'<div class="kpi-tile"><div class="kpi-tile-val">{len(_df_res):,}</div><div class="kpi-tile-lbl">Result Rows</div></div>', unsafe_allow_html=True)
+                            with _rk2:
+                                st.markdown(f'<div class="kpi-tile"><div class="kpi-tile-val">{len(_df_res.columns)}</div><div class="kpi-tile-lbl">Columns</div></div>', unsafe_allow_html=True)
+                            with _rk3:
+                                _res_mem = round(_df_res.memory_usage(deep=True).sum() / 1024, 1)
+                                st.markdown(f'<div class="kpi-tile"><div class="kpi-tile-val">{_res_mem} KB</div><div class="kpi-tile-lbl">Result Size</div></div>', unsafe_allow_html=True)
+
+                            st.markdown("<br>", unsafe_allow_html=True)
+                            st.dataframe(_df_res, use_container_width=True, hide_index=True)
+
+                            # Auto-chart for results
+                            _res_num = _df_res.select_dtypes(include='number').columns.tolist()
+                            _res_cat = _df_res.select_dtypes(exclude='number').columns.tolist()
+                            if _res_num and _res_cat and len(_df_res) > 1:
+                                try:
+                                    _auto_fig = px.bar(_df_res.head(20), x=_res_cat[0], y=_res_num[0],
+                                                        color_discrete_sequence=["#8B5CF6"])
+                                    _auto_fig.update_layout(**LO, height=280,
+                                        xaxis=dict(showgrid=False, color="#475569"),
+                                        yaxis=dict(showgrid=True, gridcolor=GRID, color="#475569"))
+                                    st.plotly_chart(_auto_fig, use_container_width=True)
+                                except Exception:
+                                    pass
+
+                            # AI Insight
+                            _df_summary = _df_res.head(15).to_string()
+                            _ai_insight_txt = generate_ai_insight(_ds_question.strip(), _ds_sql, _df_summary)
+
+                            st.markdown(f"""
+                            <div style="background:linear-gradient(135deg,rgba(139,92,246,0.06),rgba(16,185,129,0.04));
+                                border:1px solid rgba(139,92,246,0.25);
+                                border-radius:12px;padding:1rem 1.2rem;margin-top:0.8rem;">
+                                <div style="display:flex;align-items:center;gap:8px;margin-bottom:0.4rem;">
+                                    <span style="font-size:1.1rem;">💡</span>
+                                    <span style="color:#A78BFA;font-weight:700;font-size:0.85rem;">AI Executive Summary</span>
+                                </div>
+                                <p style="color:#E2E8F0;font-size:0.83rem;margin:0;line-height:1.7;">{_ai_insight_txt}</p>
+                            </div>
+                            """, unsafe_allow_html=True)
+
+                            st.markdown("<br>", unsafe_allow_html=True)
+                            _dl1, _dl2, _dl3 = st.columns([1, 1, 2])
+                            with _dl1:
+                                st.download_button(
+                                    "📥 Download CSV",
+                                    data=_df_res.to_csv(index=False),
+                                    file_name="ai_copilot_results.csv",
+                                    mime="text/csv",
+                                    use_container_width=True
+                                )
+                            with _dl2:
+                                _xl_res_buf = io.BytesIO()
+                                try:
+                                    with pd.ExcelWriter(_xl_res_buf, engine='xlsxwriter') as _xlw2:
+                                        _df_res.to_excel(_xlw2, index=False, sheet_name='AI Results')
+                                    st.download_button(
+                                        "📥 Download Excel",
+                                        data=_xl_res_buf.getvalue(),
+                                        file_name="ai_copilot_results.xlsx",
+                                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                                        use_container_width=True,
+                                        key="dl_ai_xlsx"
+                                    )
+                                except Exception:
+                                    pass
+                        else:
+                            st.info("Query returned 0 rows.")
+                    except Exception as _aie:
+                        st.markdown(f'<div class="toast-error">❌ Copilot Error: {_aie}</div>', unsafe_allow_html=True)
+                        st.info("Tip: Check table/column names in the schema context above.")
+
+            st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown("<br>", unsafe_allow_html=True)
+
+            # ── 11. DOWNLOADABLE SUMMARY REPORT ──
+            st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #10B981;padding-left:0.6rem;">📋 Downloadable Summary Report</p>', unsafe_allow_html=True)
+            st.markdown('<div class="glass-card" style="padding:1.2rem;">', unsafe_allow_html=True)
+            st.markdown('<p style="font-size:0.8rem;color:#94A3B8;margin-bottom:0.8rem;">Generate a comprehensive report of all loaded datasets — download as CSV, Excel, or text.</p>', unsafe_allow_html=True)
+
+            _rpt_c1, _rpt_c2 = st.columns([1, 1])
+            with _rpt_c1:
+                if st.button("📋 Generate Summary Report", use_container_width=True, key="gen_report"):
+                    _report_lines = []
+                    _report_lines.append("=" * 70)
+                    _report_lines.append("  AAITECH — MULTI-DATASET ANALYTICS SUMMARY REPORT")
+                    _report_lines.append(f"  Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+                    _report_lines.append("=" * 70)
+                    _report_lines.append("")
+
+                    for _rname, _rdf in st.session_state.uploaded_datasets.items():
+                        _tbl = re.sub(r'[^a-zA-Z0-9_]', '_', _rname.split('.')[0]).lower()
+                        _r_num = _rdf.select_dtypes(include='number').columns.tolist()
+                        _r_cat = _rdf.select_dtypes(exclude='number').columns.tolist()
+                        _r_miss = int(_rdf.isna().sum().sum())
+                        _r_dups = int(_rdf.duplicated().sum())
+                        _r_total = _rdf.shape[0] * _rdf.shape[1]
+                        _r_comp = round((1 - _r_miss / _r_total) * 100, 1) if _r_total > 0 else 0
+
+                        _report_lines.append(f"━━━ Dataset: {_rname} (table: {_tbl}) ━━━")
+                        _report_lines.append(f"  Rows: {len(_rdf):,}  |  Columns: {len(_rdf.columns)}")
+                        _report_lines.append(f"  Numeric columns: {len(_r_num)}  |  Text columns: {len(_r_cat)}")
+                        _report_lines.append(f"  Missing values: {_r_miss:,}  |  Completeness: {_r_comp}%")
+                        _report_lines.append(f"  Duplicate rows: {_r_dups:,}")
+                        _report_lines.append(f"  Columns: {', '.join(_rdf.columns.tolist())}")
+                        _report_lines.append("")
+
+                        if _r_num:
+                            _desc = _rdf[_r_num].describe().round(2)
+                            _report_lines.append("  Numeric Summary:")
+                            for _stat_row in _desc.to_string().split('\n'):
+                                _report_lines.append(f"    {_stat_row}")
+                            _report_lines.append("")
+
+                        _report_lines.append("")
+
+                    _report_lines.append("=" * 70)
+                    _report_lines.append("  END OF REPORT")
+                    _report_lines.append("=" * 70)
+
+                    _report_text = "\n".join(_report_lines)
+                    st.code(_report_text, language="text")
+
+                    _rpt_d1, _rpt_d2 = st.columns([1, 1])
+                    with _rpt_d1:
+                        st.download_button(
+                            "📥 Download Report (.txt)",
+                            data=_report_text,
+                            file_name=f"dataset_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
+                            mime="text/plain",
+                            use_container_width=True
+                        )
+                    with _rpt_d2:
+                        # Excel report with all datasets
+                        _xl_rpt_buf = io.BytesIO()
+                        try:
+                            with pd.ExcelWriter(_xl_rpt_buf, engine='xlsxwriter') as _xlw3:
+                                for _rname2, _rdf2 in st.session_state.uploaded_datasets.items():
+                                    _sheet = re.sub(r'[^a-zA-Z0-9_]', '_', _rname2.split('.')[0])[:31]
+                                    _rdf2.to_excel(_xlw3, index=False, sheet_name=_sheet)
+                            st.download_button(
+                                "📥 Download All Data (.xlsx)",
+                                data=_xl_rpt_buf.getvalue(),
+                                file_name=f"all_datasets_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
+                                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                                use_container_width=True,
+                                key="dl_all_xlsx"
+                            )
+                        except Exception:
+                            pass
+
+            st.markdown('</div>', unsafe_allow_html=True)
+
+            # ── Workspace Footer ──
+            st.markdown(f"""
+            <div style="text-align:center;padding:1rem 0 0.5rem;
+                color:#334155;font-size:0.72rem;
+                border-top:1px solid rgba(255,255,255,0.05);margin-top:1rem;">
+                AaiTech Industries &nbsp;&middot;&nbsp;
+                Multi-Dataset Analytics Workspace &nbsp;&middot;&nbsp;
+                {len(st.session_state.uploaded_datasets)} dataset(s) loaded &nbsp;&middot;&nbsp;
+                &copy; 2025
+            </div>""", unsafe_allow_html=True)
+        # ── Workspace Header ──
+        st.markdown("""
+        <div style="background:linear-gradient(135deg,rgba(16,185,129,0.06) 0%,rgba(139,92,246,0.04) 50%,rgba(245,158,11,0.03) 100%);
+            border:1px solid rgba(16,185,129,0.2);border-radius:16px;
+            padding:1.5rem 2rem;margin-bottom:1.5rem;position:relative;overflow:hidden;">
+            <div style="position:absolute;top:-30px;right:-30px;width:200px;height:200px;
+                background:radial-gradient(circle,rgba(139,92,246,0.08) 0%,transparent 70%);
+                pointer-events:none;"></div>
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:0.5rem;">
+                <div style="width:42px;height:42px;background:linear-gradient(135deg,#10B981,#8B5CF6);
+                    border-radius:12px;display:flex;align-items:center;justify-content:center;
+                    font-size:1.3rem;flex-shrink:0;">📁</div>
+                <div>
+                    <div style="font-size:1.2rem;font-weight:800;
+                        background:linear-gradient(90deg,#FFFFFF 0%,#10B981 60%,#8B5CF6 100%);
+                        -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+                        background-clip:text;">Multi-Dataset Analytics Workspace</div>
+                    <div style="font-size:0.78rem;color:#64748B;">
+                        Upload · Preview · Merge · Filter · Visualize · AI Analysis · Export
+                    </div>
+                </div>
+            </div>
+            <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.6rem;">
+                <span style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.25);
+                    border-radius:20px;padding:0.2rem 0.7rem;font-size:0.7rem;
+                    color:#10B981;font-weight:600;">CSV &amp; Excel</span>
+                <span style="background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.25);
+                    border-radius:20px;padding:0.2rem 0.7rem;font-size:0.7rem;
+                    color:#8B5CF6;font-weight:600;">AI-Powered Insights</span>
+                <span style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.25);
+                    border-radius:20px;padding:0.2rem 0.7rem;font-size:0.7rem;
+                    color:#F59E0B;font-weight:600;">Interactive Charts</span>
+                <span style="background:rgba(14,165,233,0.1);border:1px solid rgba(14,165,233,0.25);
+                    border-radius:20px;padding:0.2rem 0.7rem;font-size:0.7rem;
+                    color:#0EA5E9;font-weight:600;">Cross-Dataset Analysis</span>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # ── 1. FILE UPLOAD & MANAGEMENT ──
+        _up_col1, _up_col2 = st.columns([1, 1])
+        with _up_col1:
+            st.markdown("""
+            <div class="glass-card" style="padding:1.2rem;min-height:220px;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:0.8rem;">
+                    <div style="width:32px;height:32px;background:rgba(16,185,129,0.15);
+                        border:1px solid rgba(16,185,129,0.3);border-radius:8px;
+                        display:flex;align-items:center;justify-content:center;font-size:1rem;">⚡</div>
+                    <span style="font-size:0.9rem;font-weight:700;color:#F1F5F9;">Upload Datasets</span>
+                </div>
+                <div style="font-size:0.78rem;color:#64748B;margin-bottom:0.8rem;">
+                    Drag and drop CSV or Excel files to begin analysis. Each file becomes a queryable table.
+                </div>
+            """, unsafe_allow_html=True)
+            _uploaded_files = st.file_uploader(
+                "Upload CSV or Excel files",
+                type=["csv", "xlsx"],
+                accept_multiple_files=True,
+                key="ds_uploader",
+                label_visibility="collapsed"
+            )
+
+            if _uploaded_files:
+                for _f in _uploaded_files:
+                    _fname = _f.name
+                    if _fname not in st.session_state.uploaded_datasets:
+                        try:
+                            if _fname.endswith(".csv"):
+                                _df_file = pd.read_csv(_f)
+                            else:
+                                _df_file = pd.read_excel(_f)
+                            # Clean column names to be SQL-safe
+                            _clean_cols = {}
+                            for _col in _df_file.columns:
+                                _clean_name = re.sub(r'[^a-zA-Z0-9_]', '_', str(_col).strip())
+                                if not _clean_name or (not _clean_name[0].isalpha() and _clean_name[0] != '_'):
+                                    _clean_name = '_' + _clean_name
+                                _clean_cols[_col] = _clean_name
+                            _df_file = _df_file.rename(columns=_clean_cols)
+
+                            st.session_state.uploaded_datasets[_fname] = _df_file
+                            _tbl_name = re.sub(r'[^a-zA-Z0-9_]', '_', _fname.split('.')[0]).lower()
+                            _df_file.to_sql(_tbl_name, st.session_state.dataset_sqlite_conn, if_exists='replace', index=False)
+                            st.toast(f"Loaded '{_fname}' → table '{_tbl_name}'", icon="✅")
+                        except Exception as _ue:
+                            st.error(f"Error parsing '{_fname}': {_ue}")
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        with _up_col2:
+            st.markdown("""
+            <div class="glass-card" style="padding:1.2rem;min-height:220px;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:0.8rem;">
+                    <div style="width:32px;height:32px;background:rgba(139,92,246,0.15);
+                        border:1px solid rgba(139,92,246,0.3);border-radius:8px;
+                        display:flex;align-items:center;justify-content:center;font-size:1rem;">📋</div>
+                    <span style="font-size:0.9rem;font-weight:700;color:#F1F5F9;">Loaded Datasets</span>
+                    <span style="background:rgba(16,185,129,0.15);color:#10B981;font-size:0.68rem;
+                        font-weight:700;padding:0.15rem 0.5rem;border-radius:10px;margin-left:auto;">""" + str(len(st.session_state.uploaded_datasets)) + """ loaded</span>
+                </div>
+            """, unsafe_allow_html=True)
+
+            if not st.session_state.uploaded_datasets:
+                st.markdown("""
+                <div style="text-align:center;padding:1.5rem 0;">
+                    <div style="font-size:2.5rem;margin-bottom:0.5rem;opacity:0.4;">📂</div>
+                    <div style="font-size:0.85rem;color:#475569;font-weight:600;">No datasets yet</div>
+                    <div style="font-size:0.75rem;color:#334155;margin-top:0.2rem;">Upload CSV or Excel files to begin</div>
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                _ds_list = []
+                for _name, _df in st.session_state.uploaded_datasets.items():
+                    _tbl_name = re.sub(r'[^a-zA-Z0-9_]', '_', _name.split('.')[0]).lower()
+                    _ds_list.append({
+                        "📄 File": _name,
+                        "🗃️ Table": _tbl_name,
+                        "📊 Rows": f"{len(_df):,}",
+                        "📐 Cols": str(len(_df.columns))
+                    })
+                st.dataframe(pd.DataFrame(_ds_list), use_container_width=True, hide_index=True)
+
+                _del_sel = st.selectbox("Select dataset to remove:", list(st.session_state.uploaded_datasets.keys()), key="del_ds_sel")
+                if st.button("🗑️ Delete Selected", use_container_width=True):
+                    if _del_sel in st.session_state.uploaded_datasets:
+                        del st.session_state.uploaded_datasets[_del_sel]
+                        st.toast(f"Removed '{_del_sel}'", icon="🗑️")
+                        st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        # ══════════════════════════════════════════════════════════════════════
+        # ALL SECTIONS BELOW REQUIRE AT LEAST 1 UPLOADED DATASET
+        # ══════════════════════════════════════════════════════════════════════
+        if st.session_state.uploaded_datasets:
+
+            # ── 2. AUTO-GENERATED DATASET INSIGHTS (KPI SUMMARY CARDS) ──
+            st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #10B981;padding-left:0.6rem;">⚡ Auto-Generated Dataset Insights</p>', unsafe_allow_html=True)
+
+            _insight_ds = st.selectbox("Select dataset for insights:", list(st.session_state.uploaded_datasets.keys()), key="insight_ds_sel")
+            _df_ins = st.session_state.uploaded_datasets[_insight_ds]
+            _num_cols_ins = _df_ins.select_dtypes(include='number').columns.tolist()
+            _cat_cols_ins = _df_ins.select_dtypes(exclude='number').columns.tolist()
+            _total_cells = _df_ins.shape[0] * _df_ins.shape[1]
+            _total_missing = int(_df_ins.isna().sum().sum())
+            _completeness = round((1 - _total_missing / _total_cells) * 100, 1) if _total_cells > 0 else 0
+            _mem_ins = _df_ins.memory_usage(deep=True).sum()
+            _mem_ins_str = f"{round(_mem_ins/1024,1)} KB" if _mem_ins < 1048576 else f"{round(_mem_ins/1048576,2)} MB"
+            _dup_rows = int(_df_ins.duplicated().sum())
+
+            # KPI Row
+            _ik = st.columns(6)
+            _insight_kpis = [
+                (_ik[0], C1, "&#128202;", "Total Rows",     f"{len(_df_ins):,}",           "Records in dataset"),
+                (_ik[1], C2, "&#128203;", "Columns",         f"{len(_df_ins.columns)}",     f"{len(_num_cols_ins)} numeric · {len(_cat_cols_ins)} text"),
+                (_ik[2], C3, "&#9989;",   "Completeness",    f"{_completeness}%",           f"{_total_missing:,} missing cells"),
+                (_ik[3], C4, "&#128260;", "Duplicates",      f"{_dup_rows:,}",              "Duplicate rows found"),
+                (_ik[4], C5, "&#128190;", "Memory",          _mem_ins_str,                  "In-memory size"),
+                (_ik[5], C1, "&#128290;", "Unique Ratio",    f"{round(_df_ins.nunique().mean(),1)}",  "Avg unique/column"),
+            ]
+            for _col, _clr, _ico, _lbl, _val, _sub in _insight_kpis:
+                with _col:
+                    st.markdown(f"""
+                    <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);
+                        border-top:3px solid {_clr};border-radius:12px;padding:0.8rem 0.6rem;
+                        text-align:center;transition:all 0.2s;">
+                        <div style="font-size:1.1rem;margin-bottom:0.2rem;">{_ico}</div>
+                        <div style="font-size:0.65rem;font-weight:700;color:#64748B;
+                            text-transform:uppercase;letter-spacing:0.08em;">{_lbl}</div>
+                        <div style="font-size:1.3rem;font-weight:800;color:{_clr};
+                            line-height:1.1;margin:0.15rem 0;">{_val}</div>
+                        <div style="font-size:0.62rem;color:#475569;">{_sub}</div>
+                    </div>""", unsafe_allow_html=True)
+
+            st.markdown("<br>", unsafe_allow_html=True)
+
+            # ── 3. DATA QUALITY PROFILING ──
+            st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #10B981;padding-left:0.6rem;">🔬 Data Quality Profile</p>', unsafe_allow_html=True)
+            st.markdown('<div class="glass-card" style="padding:1.2rem;">', unsafe_allow_html=True)
+
+            _quality_tabs = st.tabs(["📄 Data Preview", "📋 Column Profile", "📈 Statistics", "🩺 Data Health"])
+
+            with _quality_tabs[0]:
+                _num_rows = st.slider("Rows to display:", 5, min(200, len(_df_ins)), 15, key="ds_prev_rows")
+                st.dataframe(_df_ins.head(_num_rows), use_container_width=True, hide_index=True)
+
+            with _quality_tabs[1]:
+                _cols_info = []
+                for _c in _df_ins.columns:
+                    _dtype = str(_df_ins[_c].dtype)
+                    _nulls = int(_df_ins[_c].isna().sum())
+                    _uniques = int(_df_ins[_c].nunique())
+                    _sample = str(_df_ins[_c].dropna().iloc[0])[:30] if not _df_ins[_c].dropna().empty else "—"
+                    _cols_info.append({
+                        "Column": _c,
+                        "Type": _dtype,
+                        "Missing": f"{_nulls:,} ({round((_nulls/len(_df_ins))*100,1)}%)" if len(_df_ins) > 0 else "0",
+                        "Unique": f"{_uniques:,}",
+                        "Sample": _sample
+                    })
+                st.dataframe(pd.DataFrame(_cols_info), use_container_width=True, hide_index=True)
+
+            with _quality_tabs[2]:
+                if not _num_cols_ins:
+                    st.info("No numerical columns in this dataset.")
+                else:
+                    st.dataframe(_df_ins[_num_cols_ins].describe().round(2), use_container_width=True)
+
+            with _quality_tabs[3]:
+                # Data health score
+                _health_score = _completeness
+                _health_color = "#10B981" if _health_score >= 90 else "#F59E0B" if _health_score >= 70 else "#EF4444"
+                _health_label = "Excellent" if _health_score >= 90 else "Good" if _health_score >= 70 else "Needs Attention"
+
+                st.markdown(f"""
+                <div style="text-align:center;padding:1.5rem 0;">
+                    <div style="font-size:3rem;font-weight:900;color:{_health_color};line-height:1;">{_health_score}%</div>
+                    <div style="font-size:0.85rem;font-weight:700;color:{_health_color};margin-top:0.3rem;">{_health_label}</div>
+                    <div style="font-size:0.72rem;color:#475569;margin-top:0.2rem;">Data Quality Score</div>
+                </div>
+                """, unsafe_allow_html=True)
+
+                _health_items = []
+                # Check missing data
+                if _total_missing == 0:
+                    _health_items.append(("✅", "No missing values", "All cells have data"))
+                elif _completeness >= 95:
+                    _health_items.append(("⚠️", f"{_total_missing:,} missing values", f"Data is {_completeness}% complete"))
+                else:
+                    _health_items.append(("❌", f"{_total_missing:,} missing values", f"Only {_completeness}% complete — consider cleaning"))
+                # Check duplicates
+                if _dup_rows == 0:
+                    _health_items.append(("✅", "No duplicate rows", "All records are unique"))
+                else:
+                    _health_items.append(("⚠️", f"{_dup_rows:,} duplicate rows found", "Consider deduplication"))
+                # Check column types
+                _health_items.append(("ℹ️", f"{len(_num_cols_ins)} numeric, {len(_cat_cols_ins)} categorical columns", "Column type distribution"))
+
+                for _hi_icon, _hi_title, _hi_desc in _health_items:
+                    st.markdown(f"""
+                    <div style="display:flex;align-items:center;gap:10px;padding:0.5rem 0.8rem;
+                        background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);
+                        border-radius:8px;margin-bottom:0.4rem;">
+                        <span style="font-size:1.1rem;">{_hi_icon}</span>
+                        <div>
+                            <div style="font-size:0.82rem;font-weight:600;color:#E2E8F0;">{_hi_title}</div>
+                            <div style="font-size:0.72rem;color:#475569;">{_hi_desc}</div>
+                        </div>
+                    </div>""", unsafe_allow_html=True)
+
+            st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown("<br>", unsafe_allow_html=True)
+
+            # ── 4. CORRELATION HEATMAP ──
+            if len(_num_cols_ins) >= 2:
+                st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #10B981;padding-left:0.6rem;">🔥 Correlation Heatmap</p>', unsafe_allow_html=True)
+                st.markdown('<div class="glass-card" style="padding:1.2rem;">', unsafe_allow_html=True)
+                st.markdown('<p style="font-size:0.8rem;color:#94A3B8;margin-bottom:0.8rem;">Pearson correlation between all numeric columns. Stronger correlations are highlighted.</p>', unsafe_allow_html=True)
+
+                try:
+                    _corr = _df_ins[_num_cols_ins].corr().round(2)
+                    import plotly.figure_factory as ff
+                    _heatmap_fig = go.Figure(data=go.Heatmap(
+                        z=_corr.values,
+                        x=_corr.columns.tolist(),
+                        y=_corr.columns.tolist(),
+                        colorscale=[[0,"#1E1B4B"],[0.25,"#312E81"],[0.5,"#0F172A"],[0.75,"#065F46"],[1,"#10B981"]],
+                        text=_corr.values.round(2),
+                        texttemplate="%{text}",
+                        textfont=dict(size=11, color="#E2E8F0"),
+                        hovertemplate="<b>%{x} vs %{y}</b><br>Correlation: %{z:.2f}<extra></extra>",
+                        showscale=True,
+                        colorbar=dict(tickfont=dict(color="#64748B"), title=dict(text="r", font=dict(color="#64748B")))
+                    ))
+                    _heatmap_fig.update_layout(
+                        paper_bgcolor=BG, plot_bgcolor=BG, font=FONT,
+                        height=max(280, len(_num_cols_ins) * 40),
+                        margin=dict(t=10, b=10, l=10, r=10),
+                        xaxis=dict(color="#475569", tickangle=45),
+                        yaxis=dict(color="#475569", autorange="reversed")
+                    )
+                    st.plotly_chart(_heatmap_fig, use_container_width=True)
+                except Exception as _he:
+                    st.error(f"Heatmap error: {_he}")
+
+                st.markdown('</div>', unsafe_allow_html=True)
+                st.markdown("<br>", unsafe_allow_html=True)
+
+            # ── 5. DATASET COMBINER / JOIN BUILDER ──
+            if len(st.session_state.uploaded_datasets) >= 2:
+                st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #10B981;padding-left:0.6rem;">🔀 Dataset Combiner / Join Builder</p>', unsafe_allow_html=True)
+                st.markdown('<div class="glass-card" style="padding:1.2rem;">', unsafe_allow_html=True)
+                st.markdown('<p style="font-size:0.8rem;color:#94A3B8;margin-bottom:1rem;">Merge two uploaded datasets on a shared key column.</p>', unsafe_allow_html=True)
+
+                _join_col1, _join_col2, _join_col3 = st.columns([2, 2, 1])
+                with _join_col1:
+                    _left_sel = st.selectbox("Left Dataset:", list(st.session_state.uploaded_datasets.keys()), index=0, key="join_left")
+                    _left_key = st.selectbox("Left Join Column:", st.session_state.uploaded_datasets[_left_sel].columns.tolist(), key="join_left_key")
+                with _join_col2:
+                    _right_index = 1 if len(st.session_state.uploaded_datasets) > 1 else 0
+                    _right_sel = st.selectbox("Right Dataset:", list(st.session_state.uploaded_datasets.keys()), index=_right_index, key="join_right")
+                    _right_key = st.selectbox("Right Join Column:", st.session_state.uploaded_datasets[_right_sel].columns.tolist(), key="join_right_key")
+                with _join_col3:
+                    _join_how = st.selectbox("Join Type:", ["inner", "left", "right", "outer"], index=1, key="join_how")
+                    st.markdown("<br>", unsafe_allow_html=True)
+                    _do_join = st.button("⚡ Merge Datasets", use_container_width=True)
+
+                if _do_join:
+                    if _left_sel == _right_sel:
+                        st.error("Cannot join a dataset with itself.")
+                    else:
+                        try:
+                            _df_l = st.session_state.uploaded_datasets[_left_sel]
+                            _df_r = st.session_state.uploaded_datasets[_right_sel]
+                            _df_merged = pd.merge(_df_l, _df_r, left_on=_left_key, right_on=_right_key, how=_join_how, suffixes=('_left', '_right'))
+                            _mname = f"merged_{_left_sel.split('.')[0]}_{_right_sel.split('.')[0]}.csv"
+                            st.session_state.uploaded_datasets[_mname] = _df_merged
+                            _tbl_m = re.sub(r'[^a-zA-Z0-9_]', '_', _mname.split('.')[0]).lower()
+                            _df_merged.to_sql(_tbl_m, st.session_state.dataset_sqlite_conn, if_exists='replace', index=False)
+                            st.success(f"Created '{_tbl_m}' — {len(_df_merged):,} rows × {len(_df_merged.columns)} columns")
+                            st.toast(f"Merged table '{_tbl_m}' ready!", icon="🔀")
+                            time.sleep(1)
+                            st.rerun()
+                        except Exception as _je:
+                            st.error(f"Merge failed: {_je}")
+                st.markdown('</div>', unsafe_allow_html=True)
+                st.markdown("<br>", unsafe_allow_html=True)
+
+            # ── 6. CROSS-DATASET COMPARISON ──
+            if len(st.session_state.uploaded_datasets) >= 2:
+                st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #10B981;padding-left:0.6rem;">⚖️ Cross-Dataset Comparison</p>', unsafe_allow_html=True)
+                st.markdown('<div class="glass-card" style="padding:1.2rem;">', unsafe_allow_html=True)
+                st.markdown('<p style="font-size:0.8rem;color:#94A3B8;margin-bottom:0.8rem;">Compare key statistics side-by-side between two datasets.</p>', unsafe_allow_html=True)
+
+                _cmp_c1, _cmp_c2 = st.columns(2)
+                with _cmp_c1:
+                    _cmp_left = st.selectbox("Dataset A:", list(st.session_state.uploaded_datasets.keys()), index=0, key="cmp_left")
+                with _cmp_c2:
+                    _cmp_right_idx = min(1, len(st.session_state.uploaded_datasets) - 1)
+                    _cmp_right = st.selectbox("Dataset B:", list(st.session_state.uploaded_datasets.keys()), index=_cmp_right_idx, key="cmp_right")
+
+                _df_cmp_a = st.session_state.uploaded_datasets[_cmp_left]
+                _df_cmp_b = st.session_state.uploaded_datasets[_cmp_right]
+
+                _cmp_data = {
+                    "Metric": ["Rows", "Columns", "Numeric Cols", "Text Cols", "Missing Cells", "Duplicate Rows", "Memory"],
+                    f"📄 {_cmp_left[:20]}": [
+                        f"{len(_df_cmp_a):,}",
+                        str(len(_df_cmp_a.columns)),
+                        str(len(_df_cmp_a.select_dtypes(include='number').columns)),
+                        str(len(_df_cmp_a.select_dtypes(exclude='number').columns)),
+                        f"{int(_df_cmp_a.isna().sum().sum()):,}",
+                        f"{int(_df_cmp_a.duplicated().sum()):,}",
+                        f"{round(_df_cmp_a.memory_usage(deep=True).sum()/1024,1)} KB"
+                    ],
+                    f"📄 {_cmp_right[:20]}": [
+                        f"{len(_df_cmp_b):,}",
+                        str(len(_df_cmp_b.columns)),
+                        str(len(_df_cmp_b.select_dtypes(include='number').columns)),
+                        str(len(_df_cmp_b.select_dtypes(exclude='number').columns)),
+                        f"{int(_df_cmp_b.isna().sum().sum()):,}",
+                        f"{int(_df_cmp_b.duplicated().sum()):,}",
+                        f"{round(_df_cmp_b.memory_usage(deep=True).sum()/1024,1)} KB"
+                    ]
+                }
+                st.dataframe(pd.DataFrame(_cmp_data), use_container_width=True, hide_index=True)
+
+                # Find shared columns
+                _shared_cols = list(set(_df_cmp_a.columns) & set(_df_cmp_b.columns))
+                if _shared_cols:
+                    st.markdown(f"""
+                    <div style="background:rgba(14,165,233,0.06);border:1px solid rgba(14,165,233,0.2);
+                        border-radius:8px;padding:0.6rem 1rem;margin-top:0.6rem;">
+                        <span style="color:#0EA5E9;font-weight:700;font-size:0.8rem;">🔗 Shared Columns ({len(_shared_cols)}):</span>
+                        <span style="color:#94A3B8;font-size:0.78rem;margin-left:0.4rem;">{", ".join(_shared_cols[:10])}{" ..." if len(_shared_cols) > 10 else ""}</span>
+                    </div>""", unsafe_allow_html=True)
+
+                st.markdown('</div>', unsafe_allow_html=True)
+                st.markdown("<br>", unsafe_allow_html=True)
+
+            # ── 7. INTERACTIVE FILTER SLICER ──
+            st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #10B981;padding-left:0.6rem;">🎛️ Interactive Data Slicer</p>', unsafe_allow_html=True)
+            st.markdown('<div class="glass-card" style="padding:1.2rem;">', unsafe_allow_html=True)
+
+            _slice_ds = st.selectbox("Dataset to filter:", list(st.session_state.uploaded_datasets.keys()), key="slice_ds")
+            _df_slice = st.session_state.uploaded_datasets[_slice_ds]
+
+            _s1, _s2, _s3 = st.columns([2, 1, 3])
+            with _s1:
+                _slice_col = st.selectbox("Column:", _df_slice.columns.tolist(), key="slice_col")
+            with _s2:
+                _is_num = pd.api.types.is_numeric_dtype(_df_slice[_slice_col])
+                _ops = ["==", "contains", "!=", ">", "<", ">=", "<="] if _is_num else ["==", "contains", "!=", "starts with"]
+                _slice_op = st.selectbox("Operator:", _ops, key="slice_op")
+            with _s3:
+                if _is_num:
+                    _min_v = float(_df_slice[_slice_col].min()) if not _df_slice[_slice_col].isna().all() else 0.0
+                    _max_v = float(_df_slice[_slice_col].max()) if not _df_slice[_slice_col].isna().all() else 100.0
+                    _slice_val = st.number_input("Value:", value=float((_min_v + _max_v) / 2), key="slice_val_num")
+                else:
+                    _unq_vals = _df_slice[_slice_col].dropna().unique().tolist()
+                    if len(_unq_vals) < 40:
+                        _slice_val = st.selectbox("Value:", _unq_vals, key="slice_val_select")
+                    else:
+                        _slice_val = st.text_input("Search Term:", key="slice_val_text")
+
+            _df_filtered = _df_slice.copy()
+            try:
+                if _slice_op == "==":
+                    _df_filtered = _df_filtered[_df_filtered[_slice_col] == _slice_val]
+                elif _slice_op == "!=":
+                    _df_filtered = _df_filtered[_df_filtered[_slice_col] != _slice_val]
+                elif _slice_op == "contains" and not _is_num:
+                    _df_filtered = _df_filtered[_df_filtered[_slice_col].astype(str).str.contains(str(_slice_val), case=False, na=False)]
+                elif _slice_op == "contains" and _is_num:
+                    _df_filtered = _df_filtered[_df_filtered[_slice_col].astype(str).str.contains(str(_slice_val), na=False)]
+                elif _slice_op == "starts with":
+                    _df_filtered = _df_filtered[_df_filtered[_slice_col].astype(str).str.startswith(str(_slice_val), na=False)]
+                elif _slice_op == ">":
+                    _df_filtered = _df_filtered[_df_filtered[_slice_col] > float(_slice_val)]
+                elif _slice_op == "<":
+                    _df_filtered = _df_filtered[_df_filtered[_slice_col] < float(_slice_val)]
+                elif _slice_op == ">=":
+                    _df_filtered = _df_filtered[_df_filtered[_slice_col] >= float(_slice_val)]
+                elif _slice_op == "<=":
+                    _df_filtered = _df_filtered[_df_filtered[_slice_col] <= float(_slice_val)]
+
+                st.markdown(f"""
+                <div style="display:flex;align-items:center;gap:8px;margin:0.4rem 0;">
+                    <span style="color:#10B981;font-size:0.8rem;font-weight:600;">✓ {len(_df_filtered):,} of {len(_df_slice):,} rows</span>
+                    <span style="color:#475569;font-size:0.72rem;">({round(len(_df_filtered)/max(len(_df_slice),1)*100,1)}% match)</span>
+                </div>""", unsafe_allow_html=True)
+                st.dataframe(_df_filtered.head(100), use_container_width=True, hide_index=True)
+
                 _fd1, _fd2 = st.columns([2, 5])
                 with _fd1:
                     st.download_button(
@@ -1192,135 +2423,281 @@ elif _page == "📊 Dashboard":
                         use_container_width=True
                     )
             except Exception as _fe:
-                st.error(f"Filtering error: {_fe}")
-                
+                st.error(f"Filter error: {_fe}")
+
             st.markdown('</div>', unsafe_allow_html=True)
             st.markdown("<br>", unsafe_allow_html=True)
 
-            # 5. DYNAMIC PLOTLY VISUAL BUILDER
-            st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #10B981;padding-left:0.6rem;">📊 Custom Interactive Plotly Visualizer</p>', unsafe_allow_html=True)
+            # ── 8. ENHANCED PLOTLY VISUALIZER ──
+            st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #10B981;padding-left:0.6rem;">📊 Interactive Chart Builder</p>', unsafe_allow_html=True)
             st.markdown('<div class="glass-card" style="padding:1.2rem;">', unsafe_allow_html=True)
-            st.markdown('<p style="font-size:0.8rem;color:#94A3B8;margin-bottom:1rem;">Select a dataset and construct your own dynamic Plotly graphs using the inputs below.</p>', unsafe_allow_html=True)
-            
-            _vis_ds = st.selectbox("Select dataset to chart:", list(st.session_state.uploaded_datasets.keys()), key="vis_ds")
+            st.markdown('<p style="font-size:0.8rem;color:#94A3B8;margin-bottom:0.8rem;">Build custom Plotly visualizations with 7 chart types. Select axes and grouping options below.</p>', unsafe_allow_html=True)
+
+            _vis_ds = st.selectbox("Select dataset:", list(st.session_state.uploaded_datasets.keys()), key="vis_ds")
             _df_vis = st.session_state.uploaded_datasets[_vis_ds]
-            
-            _v1, _v2, _v3, _v4 = st.columns([1.2, 1.5, 1.5, 1.5])
+
+            _v1, _v2, _v3, _v4 = st.columns([1.5, 1.5, 1.5, 1.5])
             with _v1:
-                _vtype = st.selectbox("Chart Type:", ["Bar Chart", "Line Chart", "Scatter Plot", "Pie Chart", "Area Chart"], key="vis_type")
+                _vtype = st.selectbox("Chart Type:", [
+                    "Bar Chart", "Line Chart", "Scatter Plot", "Pie Chart",
+                    "Area Chart", "Histogram", "Box Plot"
+                ], key="vis_type")
             with _v2:
-                _vx = st.selectbox("X-Axis Column:", _df_vis.columns.tolist(), key="vis_x")
+                _vx = st.selectbox("X-Axis:", _df_vis.columns.tolist(), key="vis_x")
             with _v3:
                 _num_cols_vis = _df_vis.select_dtypes(include='number').columns.tolist()
                 _all_cols_vis = _df_vis.columns.tolist()
-                _vy_opts = _num_cols_vis if _vtype != "Pie Chart" else _all_cols_vis
-                _vy = st.selectbox("Y-Axis Column (Metric):", _vy_opts, key="vis_y")
+                if _vtype in ["Histogram", "Box Plot"]:
+                    _vy_opts = _num_cols_vis if _num_cols_vis else _all_cols_vis
+                elif _vtype == "Pie Chart":
+                    _vy_opts = _all_cols_vis
+                else:
+                    _vy_opts = _num_cols_vis if _num_cols_vis else _all_cols_vis
+                if not _vy_opts:
+                    _vy_opts = ["None"]
+                _vy = st.selectbox("Y-Axis / Metric:", _vy_opts, key="vis_y")
             with _v4:
-                _cat_cols = _df_vis.select_dtypes(exclude='number').columns.tolist()
-                _vcolor = st.selectbox("Group By / Color (Optional):", ["None"] + _cat_cols, key="vis_color")
-                
-            # Generate Graph
+                _cat_cols_vis = _df_vis.select_dtypes(exclude='number').columns.tolist()
+                _vcolor = st.selectbox("Group By (color):", ["None"] + _cat_cols_vis, key="vis_color")
+
             try:
-                _chart_df = _df_vis.head(100) # Limit chart preview to first 100 rows for rendering speed
+                _chart_df = _df_vis.head(200)
                 _color_arg = None if _vcolor == "None" else _vcolor
-                
+
                 _fig = None
                 if _vtype == "Bar Chart":
                     _fig = px.bar(_chart_df, x=_vx, y=_vy, color=_color_arg, color_discrete_sequence=PAL)
                 elif _vtype == "Line Chart":
                     _fig = px.line(_chart_df, x=_vx, y=_vy, color=_color_arg, color_discrete_sequence=PAL)
                 elif _vtype == "Scatter Plot":
-                    _fig = px.scatter(_chart_df, x=_vx, y=_vy, color=_color_arg, color_discrete_sequence=PAL)
+                    _fig = px.scatter(_chart_df, x=_vx, y=_vy, color=_color_arg, color_discrete_sequence=PAL,
+                                      opacity=0.7)
                 elif _vtype == "Area Chart":
                     _fig = px.area(_chart_df, x=_vx, y=_vy, color=_color_arg, color_discrete_sequence=PAL)
                 elif _vtype == "Pie Chart":
-                    _fig = px.pie(_chart_df, names=_vx, values=_vy, color_discrete_sequence=PAL, hole=0.4)
-                    
+                    _fig = px.pie(_chart_df, names=_vx, values=_vy, color_discrete_sequence=PAL, hole=0.45)
+                elif _vtype == "Histogram":
+                    _fig = px.histogram(_chart_df, x=_vy, nbins=30, color=_color_arg,
+                                         color_discrete_sequence=PAL, opacity=0.85)
+                elif _vtype == "Box Plot":
+                    _fig = px.box(_chart_df, x=_color_arg if _color_arg else _vx, y=_vy,
+                                  color=_color_arg, color_discrete_sequence=PAL)
+
                 if _fig is not None:
-                    _fig.update_layout(**LO)
-                    if _vtype != "Pie Chart":
+                    _fig.update_layout(**LO, height=350)
+                    if _vtype not in ["Pie Chart"]:
                         _fig.update_layout(
                             xaxis=dict(showgrid=False, color="#475569"),
                             yaxis=dict(showgrid=True, gridcolor=GRID, color="#475569")
                         )
                     st.plotly_chart(_fig, use_container_width=True)
-                    st.caption(f"Interactive Plotly {_vtype} rendering of top 100 rows in '{_vis_ds}'")
+                    st.markdown(f"""
+                    <div style="display:flex;align-items:center;justify-content:space-between;padding:0.4rem 0.8rem;
+                        background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);
+                        border-radius:8px;margin-top:0.3rem;">
+                        <span style="font-size:0.72rem;color:#475569;">
+                            {_vtype} · {_vis_ds} · Top {min(200, len(_df_vis))} rows
+                        </span>
+                        <span style="font-size:0.68rem;color:#334155;">
+                            X: {_vx} · Y: {_vy}{f" · Color: {_vcolor}" if _vcolor != "None" else ""}
+                        </span>
+                    </div>""", unsafe_allow_html=True)
             except Exception as _ve:
-                st.error(f"Failed to generate visualization: {_ve}")
-                
+                st.error(f"Chart error: {_ve}")
+
             st.markdown('</div>', unsafe_allow_html=True)
             st.markdown("<br>", unsafe_allow_html=True)
 
-            # 6. AI POWERED NATURAL LANGUAGE COPILOT (In-memory SQLite analysis)
-            st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #10B981;padding-left:0.6rem;">💬 AI Copilot for Uploaded Datasets</p>', unsafe_allow_html=True)
-            st.markdown('<div class="glass-card" style="padding:1.2rem;">', unsafe_allow_html=True)
-            st.markdown('<span style="font-size:0.8rem;color:#94A3B8;display:block;margin-bottom:0.6rem;">Ask questions about your uploaded CSV/Excel files in plain English. The AI Copilot translates it into SQL, runs it, and summarizes the findings.</span>', unsafe_allow_html=True)
-            
-            # Assemble schemas description for system prompt
+            # ── 9. AI COPILOT FOR UPLOADED DATASETS ──
+            st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #10B981;padding-left:0.6rem;">🧠 AI Copilot — Natural Language Analysis</p>', unsafe_allow_html=True)
+            st.markdown("""
+            <div class="glass-card" style="padding:1.2rem;border-top:3px solid #8B5CF6;">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:0.8rem;">
+                    <div style="width:36px;height:36px;background:linear-gradient(135deg,#8B5CF6,#6D28D9);
+                        border-radius:10px;display:flex;align-items:center;justify-content:center;
+                        font-size:1.1rem;animation:glow 3s ease-in-out infinite;">🧠</div>
+                    <div>
+                        <div style="font-size:0.9rem;font-weight:700;color:#F1F5F9;">AI Dataset Copilot</div>
+                        <div style="font-size:0.72rem;color:#64748B;">Ask questions about your data in plain English — AI writes SQL, runs it, and summarizes findings.</div>
+                    </div>
+                </div>
+            """, unsafe_allow_html=True)
+
+            # Schema context
             _schema_desc = []
             for _name, _df in st.session_state.uploaded_datasets.items():
                 _t_name = re.sub(r'[^a-zA-Z0-9_]', '_', _name.split('.')[0]).lower()
                 _cols_str = ", ".join(f"{_col}" for _col in _df.columns)
                 _schema_desc.append(f"Table: {_t_name} - Columns: [{_cols_str}]")
             _schema_context_str = "\n".join(_schema_desc)
-            
-            # Show schema context
-            with st.expander("👁️ View Schemas Context Sent to AI"):
+
+            with st.expander("👁️ View Schema Context (sent to AI)"):
                 st.code(_schema_context_str, language="text")
-                
+
+            # Example queries
+            _example_queries = [
+                "Count total rows in each table",
+                "Show the top 10 records by the highest numeric column",
+                "Find average values grouped by the first text column",
+                "What are the unique values in the first column?"
+            ]
+            st.markdown('<div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-bottom:0.6rem;">', unsafe_allow_html=True)
+            for _eq in _example_queries:
+                st.markdown(f"""<span style="display:inline-block;background:rgba(139,92,246,0.08);
+                    border:1px solid rgba(139,92,246,0.2);color:#A78BFA;font-size:0.72rem;
+                    padding:0.25rem 0.6rem;border-radius:20px;">{_eq}</span>""", unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+
             with st.form("ds_ai_form"):
                 _ds_question = st.text_area(
-                    "Ask the AI Dataset Copilot:",
-                    placeholder="e.g. Find the average sales grouped by category from my merged table...\ne.g. Count the number of unique customers from customers...",
-                    key="ds_ai_q"
+                    "Ask the AI Copilot:",
+                    placeholder="e.g. Find the average sales grouped by category...\ne.g. What is the total quantity ordered per product?",
+                    key="ds_ai_q",
+                    height=100
                 )
                 _ds_sub = st.form_submit_button("⚡ Analyze with AI Copilot", use_container_width=True)
-                
+
             if _ds_sub and _ds_question.strip():
-                with st.spinner("🧠 AI Copilot is writing SQLite code and analyzing datasets..."):
+                with st.spinner("🧠 AI is analyzing your datasets..."):
                     try:
-                        # Generate SQL via OpenAI
                         _ds_sql = query_uploaded_datasets(_ds_question.strip(), _schema_context_str)
-                        
-                        st.markdown('<span style="font-size:0.8rem;font-weight:700;color:#FBB724;">Generated SQLite Query</span>', unsafe_allow_html=True)
+
+                        st.markdown('<span style="font-size:0.8rem;font-weight:700;color:#8B5CF6;">Generated SQLite Query</span>', unsafe_allow_html=True)
                         st.code(_ds_sql, language="sql")
-                        
-                        # Run query on local in-memory SQLite connection
+
                         _df_res = pd.read_sql_query(_ds_sql, st.session_state.dataset_sqlite_conn)
-                        
-                        if _df_res is not None:
-                            st.markdown(f"<span style='color:#10B981;font-size:0.8rem;font-weight:600;'>✓ Query output ({len(_df_res)} row(s))</span>", unsafe_allow_html=True)
+
+                        if _df_res is not None and not _df_res.empty:
+                            # Results KPIs
+                            _rk1, _rk2, _rk3 = st.columns(3)
+                            with _rk1:
+                                st.markdown(f'<div class="kpi-tile"><div class="kpi-tile-val">{len(_df_res):,}</div><div class="kpi-tile-lbl">Result Rows</div></div>', unsafe_allow_html=True)
+                            with _rk2:
+                                st.markdown(f'<div class="kpi-tile"><div class="kpi-tile-val">{len(_df_res.columns)}</div><div class="kpi-tile-lbl">Columns</div></div>', unsafe_allow_html=True)
+                            with _rk3:
+                                _res_mem = round(_df_res.memory_usage(deep=True).sum() / 1024, 1)
+                                st.markdown(f'<div class="kpi-tile"><div class="kpi-tile-val">{_res_mem} KB</div><div class="kpi-tile-lbl">Result Size</div></div>', unsafe_allow_html=True)
+
+                            st.markdown("<br>", unsafe_allow_html=True)
                             st.dataframe(_df_res, use_container_width=True, hide_index=True)
-                            
-                            # Generate visual insights using the generated result summary
+
+                            # Auto-chart for results
+                            _res_num = _df_res.select_dtypes(include='number').columns.tolist()
+                            _res_cat = _df_res.select_dtypes(exclude='number').columns.tolist()
+                            if _res_num and _res_cat and len(_df_res) > 1:
+                                try:
+                                    _auto_fig = px.bar(_df_res.head(20), x=_res_cat[0], y=_res_num[0],
+                                                        color_discrete_sequence=["#8B5CF6"])
+                                    _auto_fig.update_layout(**LO, height=280,
+                                        xaxis=dict(showgrid=False, color="#475569"),
+                                        yaxis=dict(showgrid=True, gridcolor=GRID, color="#475569"))
+                                    st.plotly_chart(_auto_fig, use_container_width=True)
+                                except Exception:
+                                    pass
+
+                            # AI Insight
                             _df_summary = _df_res.head(15).to_string()
                             _ai_insight_txt = generate_ai_insight(_ds_question.strip(), _ds_sql, _df_summary)
-                            
-                            # Render AI Insight summary box
+
                             st.markdown(f"""
-                            <div style="background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.25);
-                                border-radius:10px;padding:0.9rem 1.2rem;margin-top:1rem;">
-                                <span style="color:#10B981;font-weight:700;font-size:0.85rem;display:block;margin-bottom:0.3rem;">💡 AI Executive Summary</span>
-                                <p style="color:#E2E8F0;font-size:0.83rem;margin:0;line-height:1.6;">{_ai_insight_txt}</p>
+                            <div style="background:linear-gradient(135deg,rgba(139,92,246,0.06),rgba(16,185,129,0.04));
+                                border:1px solid rgba(139,92,246,0.25);
+                                border-radius:12px;padding:1rem 1.2rem;margin-top:0.8rem;">
+                                <div style="display:flex;align-items:center;gap:8px;margin-bottom:0.4rem;">
+                                    <span style="font-size:1.1rem;">💡</span>
+                                    <span style="color:#A78BFA;font-weight:700;font-size:0.85rem;">AI Executive Summary</span>
+                                </div>
+                                <p style="color:#E2E8F0;font-size:0.83rem;margin:0;line-height:1.7;">{_ai_insight_txt}</p>
                             </div>
                             """, unsafe_allow_html=True)
-                            
-                            # Download result CSV
+
                             st.markdown("<br>", unsafe_allow_html=True)
-                            st.download_button(
-                                "📥 Download Query Results CSV",
-                                data=_df_res.to_csv(index=False),
-                                file_name="ai_copilot_results.csv",
-                                mime="text/csv"
-                            )
+                            _dl1, _dl2 = st.columns([1, 3])
+                            with _dl1:
+                                st.download_button(
+                                    "📥 Download Results CSV",
+                                    data=_df_res.to_csv(index=False),
+                                    file_name="ai_copilot_results.csv",
+                                    mime="text/csv",
+                                    use_container_width=True
+                                )
                         else:
-                            st.info("Query ran successfully but returned 0 rows.")
+                            st.info("Query returned 0 rows.")
                     except Exception as _aie:
                         st.markdown(f'<div class="toast-error">❌ Copilot Error: {_aie}</div>', unsafe_allow_html=True)
-                        st.info("Tip: Double check if you are referencing the correct table and column names shown in the schemas context box.")
-                        
+                        st.info("Tip: Check table/column names in the schema context above.")
+
             st.markdown('</div>', unsafe_allow_html=True)
             st.markdown("<br>", unsafe_allow_html=True)
+
+            # ── 10. DOWNLOADABLE SUMMARY REPORT ──
+            st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #10B981;padding-left:0.6rem;">📋 Downloadable Summary Report</p>', unsafe_allow_html=True)
+            st.markdown('<div class="glass-card" style="padding:1.2rem;">', unsafe_allow_html=True)
+            st.markdown('<p style="font-size:0.8rem;color:#94A3B8;margin-bottom:0.8rem;">Generate a comprehensive text report of all loaded datasets — download as CSV or text.</p>', unsafe_allow_html=True)
+
+            if st.button("📋 Generate Summary Report", use_container_width=True, key="gen_report"):
+                _report_lines = []
+                _report_lines.append("=" * 70)
+                _report_lines.append("  AAITECH — MULTI-DATASET ANALYTICS SUMMARY REPORT")
+                _report_lines.append(f"  Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+                _report_lines.append("=" * 70)
+                _report_lines.append("")
+
+                for _rname, _rdf in st.session_state.uploaded_datasets.items():
+                    _tbl = re.sub(r'[^a-zA-Z0-9_]', '_', _rname.split('.')[0]).lower()
+                    _r_num = _rdf.select_dtypes(include='number').columns.tolist()
+                    _r_cat = _rdf.select_dtypes(exclude='number').columns.tolist()
+                    _r_miss = int(_rdf.isna().sum().sum())
+                    _r_dups = int(_rdf.duplicated().sum())
+                    _r_total = _rdf.shape[0] * _rdf.shape[1]
+                    _r_comp = round((1 - _r_miss / _r_total) * 100, 1) if _r_total > 0 else 0
+
+                    _report_lines.append(f"━━━ Dataset: {_rname} (table: {_tbl}) ━━━")
+                    _report_lines.append(f"  Rows: {len(_rdf):,}  |  Columns: {len(_rdf.columns)}")
+                    _report_lines.append(f"  Numeric columns: {len(_r_num)}  |  Text columns: {len(_r_cat)}")
+                    _report_lines.append(f"  Missing values: {_r_miss:,}  |  Completeness: {_r_comp}%")
+                    _report_lines.append(f"  Duplicate rows: {_r_dups:,}")
+                    _report_lines.append(f"  Columns: {', '.join(_rdf.columns.tolist())}")
+                    _report_lines.append("")
+
+                    if _r_num:
+                        _desc = _rdf[_r_num].describe().round(2)
+                        _report_lines.append("  Numeric Summary:")
+                        for _stat_row in _desc.to_string().split('\n'):
+                            _report_lines.append(f"    {_stat_row}")
+                        _report_lines.append("")
+
+                    _report_lines.append("")
+
+                _report_lines.append("=" * 70)
+                _report_lines.append("  END OF REPORT")
+                _report_lines.append("=" * 70)
+
+                _report_text = "\n".join(_report_lines)
+                st.code(_report_text, language="text")
+
+                _rpt1, _rpt2 = st.columns([1, 3])
+                with _rpt1:
+                    st.download_button(
+                        "📥 Download Report (.txt)",
+                        data=_report_text,
+                        file_name=f"dataset_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
+                        mime="text/plain",
+                        use_container_width=True
+                    )
+
+            st.markdown('</div>', unsafe_allow_html=True)
+
+            # ── Workspace Footer ──
+            st.markdown(f"""
+            <div style="text-align:center;padding:1rem 0 0.5rem;
+                color:#334155;font-size:0.72rem;
+                border-top:1px solid rgba(255,255,255,0.05);margin-top:1rem;">
+                AaiTech Industries &nbsp;&middot;&nbsp;
+                Multi-Dataset Analytics Workspace &nbsp;&middot;&nbsp;
+                {len(st.session_state.uploaded_datasets)} dataset(s) loaded &nbsp;&middot;&nbsp;
+                &copy; 2025
+            </div>""", unsafe_allow_html=True)
 
 # ══════════════════════════════════════════════════════════════════════════════
 # HISTORY PAGE
@@ -1408,13 +2785,14 @@ elif _page == "⚙️ Settings":
 
     # DB
     st.markdown('<div class="glass-card" style="margin-bottom:1rem;"><div style="font-size:0.85rem;font-weight:700;color:#FBB724!important;margin-bottom:1rem;">&#128451; Database Connection</div>',unsafe_allow_html=True)
-    _dok = test_connection()
+    from database import get_connection_status
+    _dok, _dmsg = get_connection_status()
     _ddot="status-dot-green" if _dok else "status-dot-red"
-    st.markdown(f'<div style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:0.8rem 1rem;margin-bottom:0.5rem;"><div><div style="font-size:0.85rem;font-weight:600;color:#E2E8F0!important;">MySQL Database</div><div style="font-size:0.75rem;color:#475569!important;">127.0.0.1:3306 &middot; aaitech</div></div><div><span class="{_ddot}"></span><span style="font-size:0.8rem;color:{"#10B981" if _dok else "#EF4444"}!important;">{"Connected" if _dok else "Offline"}</span></div></div>',unsafe_allow_html=True)
+    st.markdown(f'<div style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:0.8rem 1rem;margin-bottom:0.5rem;"><div><div style="font-size:0.85rem;font-weight:600;color:#E2E8F0!important;">Active Database</div><div style="font-size:0.75rem;color:#475569!important;">{_dmsg}</div></div><div><span class="{_ddot}"></span><span style="font-size:0.8rem;color:{"#10B981" if _dok else "#EF4444"}!important;">{"Online" if _dok else "Offline"}</span></div></div>',unsafe_allow_html=True)
     if st.button("&#8635; Test Connection"):
-        _ok2=test_connection()
+        _ok2, _msg2 = get_connection_status()
         if _ok2:
-            st.markdown('<div class="toast-success">&#10003; Database connected successfully</div>',unsafe_allow_html=True)
+            st.markdown(f'<div class="toast-success">&#10003; Connected: {_msg2}</div>',unsafe_allow_html=True)
         else:
             st.markdown(f'<div class="toast-error">&#10060; Cannot connect to database.</div>',unsafe_allow_html=True)
     st.markdown('</div>',unsafe_allow_html=True)
