@@ -7,9 +7,30 @@ import time
 import io
 import sqlite3
 from text_to_sql import question_to_sql, query_uploaded_datasets, generate_ai_insight
-from database import execute_query, test_connection, get_db_type
+from database import execute_query, test_connection, get_db_type, get_connection, get_connection_status, get_connection
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 st.set_page_config(
+    page_title="AaiTech · AI SQL Assistant",
+    page_icon="🤖",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+
+
+from datetime import datetime
+import re
+import time
+import io
+import sqlite3
+from text_to_sql import question_to_sql, query_uploaded_datasets, generate_ai_insight
+from database import execute_query, test_connection, get_db_type, get_connection, get_connection_status, get_connection
+
+
     page_title="AaiTech · AI SQL Assistant",
     page_icon="🤖",
     layout="wide",
@@ -227,8 +248,18 @@ _defaults = {
     "history":[], "submit":False, "db_status":None,
     "saved_queries":[], "active_page":"🏠 Home",
     "question_input":"", "last_sql":"", "last_df":None,
-    "pending_question":""
 }
+
+# Initialize database connection status
+if "db_status" not in st.session_state:
+    st.session_state.db_status = (False, "Not checked")
+# Attempt connection and update status
+try:
+    conn_ok, status_msg = get_connection_status()
+    st.session_state.db_status = (conn_ok, status_msg)
+except Exception as e:
+    st.session_state.db_status = (False, str(e))
+
 for _k,_v in _defaults.items():
     if _k not in st.session_state:
         st.session_state[_k] = _v
@@ -256,7 +287,7 @@ with st.sidebar:
     # DB status (auto-check)
     from database import get_connection_status
     _db_ok, _db_msg = get_connection_status()
-    st.session_state.db_status = _db_ok
+    st.session_state.db_status = ( _db_ok, _db_msg )
     _dot = "status-dot-green" if _db_ok else "status-dot-red"
     _stxt = _db_msg if _db_ok else "Offline"
     st.markdown(f"""
@@ -720,6 +751,30 @@ elif _page == "📊 Dashboard":
                     file_name=f"{name}.csv",
                     mime="text/csv",
                 )
+        # ── AI Query on Uploaded Datasets ────────────────────────────────────────
+        st.markdown("""\n<div class='section-label'>AI Query on Uploaded Data</div>\n""", unsafe_allow_html=True)
+        uploaded_question = st.text_input("Ask AI about your uploaded datasets", key="uploaded_ai_question")
+        if st.button("Run AI Query", key="run_uploaded_ai"):
+            if uploaded_question:
+                try:
+                    # Build schema context from uploaded tables
+                    def get_uploaded_schema():
+                        conn = st.session_state.dataset_sqlite_conn
+                        schema_parts = []
+                        for tbl in st.session_state.uploaded_datasets.keys():
+                            cols = [row[1] for row in conn.execute(f"PRAGMA table_info({tbl})").fetchall()]
+                            schema_parts.append(f"Table {tbl}: columns ({', '.join(cols)})")
+                        return "\n".join(schema_parts)
+                    schema_ctx = get_uploaded_schema()
+                    sql = query_uploaded_datasets(uploaded_question, schema_ctx)
+                    df = pd.read_sql_query(sql, st.session_state.dataset_sqlite_conn)
+                    st.subheader("AI Generated SQL")
+                    st.code(sql, language="sql")
+                    st.subheader("Results")
+                    st.dataframe(df)
+                except Exception as e:
+                    st.error(f"AI query failed: {e}")
+
 
 
     # ── Overhauled Dashboard Page Header ──────────────────────────────────────
