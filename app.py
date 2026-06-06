@@ -21,22 +21,6 @@ st.set_page_config(
 )
 
 
-
-from datetime import datetime
-import re
-import time
-import io
-import sqlite3
-from text_to_sql import question_to_sql, query_uploaded_datasets, generate_ai_insight
-from database import execute_query, test_connection, get_db_type, get_connection, get_connection_status, get_connection
-
-
-    page_title="AaiTech · AI SQL Assistant",
-    page_icon="🤖",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
-
 # ══════════════════════════════════════════════════════════════════════════════
 # GLOBAL CSS
 # ══════════════════════════════════════════════════════════════════════════════
@@ -708,7 +692,7 @@ elif _page == "📊 Dashboard":
     BG="rgba(0,0,0,0)"; GRID="rgba(255,255,255,0.05)"
     FONT=dict(family="Inter,sans-serif",size=11,color="#94A3B8")
     LO=dict(paper_bgcolor=BG,plot_bgcolor=BG,font=FONT,
-            margin=dict(t=20,b=20,l=10,r=10),height=280)
+            margin=dict(t=20,b=20,l=10,r=10))
 
     # Initialize session states for uploaded datasets
     if "uploaded_datasets" not in st.session_state:
@@ -732,7 +716,7 @@ elif _page == "📊 Dashboard":
                     df = pd.read_csv(f)
                 else:
                     df = pd.read_excel(f)
-                table_name = f.name.rsplit(".", 1)[0]
+                table_name = re.sub(r'[^a-zA-Z0-9_]', '_', f.name.split('.')[0]).lower()
                 st.session_state.uploaded_datasets[table_name] = df
                 # Load into in‑memory SQLite for SQL queries
                 df.to_sql(table_name, st.session_state.dataset_sqlite_conn, if_exists='replace', index=False)
@@ -762,7 +746,7 @@ elif _page == "📊 Dashboard":
                         conn = st.session_state.dataset_sqlite_conn
                         schema_parts = []
                         for tbl in st.session_state.uploaded_datasets.keys():
-                            cols = [row[1] for row in conn.execute(f"PRAGMA table_info({tbl})").fetchall()]
+                            cols = [row[1] for row in conn.execute(f'PRAGMA table_info("{tbl}")').fetchall()]
                             schema_parts.append(f"Table {tbl}: columns ({', '.join(cols)})")
                         return "\n".join(schema_parts)
                     schema_ctx = get_uploaded_schema()
@@ -919,7 +903,7 @@ elif _page == "📊 Dashboard":
                         labels=_cr["Category"],values=_cr["Revenue"],hole=0.58,
                         marker_colors=PAL,textinfo="label+percent",
                         hovertemplate="<b>%{label}</b><br>$%{value:,.2f}<extra></extra>"))
-                    _f1.update_layout(**LO,showlegend=False)
+                    _f1.update_layout(**LO,height=280,showlegend=False)
                     _f1.add_annotation(text=f"<b>${_rev:,.0f}</b><br><span style='font-size:9px'>Total</span>",
                         x=0.5,y=0.5,showarrow=False,font_size=13,font_color=C1)
                     st.plotly_chart(_f1,use_container_width=True)
@@ -938,7 +922,7 @@ elif _page == "📊 Dashboard":
                             colorscale=[[0,"rgba(251,183,36,0.2)"],[1,C1]],showscale=False),
                         text=_co["Orders"],textposition="outside",
                         hovertemplate="<b>%{x}</b><br>%{y} orders<extra></extra>"))
-                    _f2.update_layout(**LO,
+                    _f2.update_layout(**LO,height=280,
                         xaxis=dict(showgrid=False,color="#475569"),
                         yaxis=dict(showgrid=True,gridcolor=GRID,color="#475569"))
                     st.plotly_chart(_f2,use_container_width=True)
@@ -961,7 +945,7 @@ elif _page == "📊 Dashboard":
                             colorscale=[[0,"rgba(16,185,129,0.2)"],[1,C2]],showscale=False),
                         text=_pr["Revenue"].apply(lambda v:f"${v:,.0f}"),textposition="outside",
                         hovertemplate="<b>%{y}</b><br>$%{x:,.2f}<extra></extra>"))
-                    _f3.update_layout(**LO,
+                    _f3.update_layout(**LO,height=280,
                         xaxis=dict(showgrid=True,gridcolor=GRID,color="#475569"),
                         yaxis=dict(showgrid=False,color="#475569"))
                     st.plotly_chart(_f3,use_container_width=True)
@@ -980,7 +964,7 @@ elif _page == "📊 Dashboard":
                             colorscale=[[0,"rgba(139,92,246,0.2)"],[1,C3]],showscale=False),
                         text=_fg["freight"].apply(lambda v:f"${v:,.1f}"),textposition="outside",
                         hovertemplate="<b>%{x}</b><br>$%{y:,.2f}<extra></extra>"))
-                    _f4.update_layout(**LO,
+                    _f4.update_layout(**LO,height=280,
                         xaxis=dict(showgrid=False,color="#475569"),
                         yaxis=dict(showgrid=True,gridcolor=GRID,color="#475569"))
                     st.plotly_chart(_f4,use_container_width=True)
@@ -1150,7 +1134,8 @@ elif _page == "📊 Dashboard":
             if _uploaded_files:
                 for _f in _uploaded_files:
                     _fname = _f.name
-                    if _fname not in st.session_state.uploaded_datasets:
+                    _tbl_name_chk = re.sub(r'[^a-zA-Z0-9_]', '_', _fname.split('.')[0]).lower()
+                    if _tbl_name_chk not in st.session_state.uploaded_datasets:
                         # Validate file size (50MB limit)
                         _f.seek(0, 2)
                         _fsize = _f.tell()
@@ -1175,8 +1160,8 @@ elif _page == "📊 Dashboard":
                                 _clean_cols[_col] = _clean_name
                             _df_file = _df_file.rename(columns=_clean_cols)
 
-                            st.session_state.uploaded_datasets[_fname] = _df_file
                             _tbl_name = re.sub(r'[^a-zA-Z0-9_]', '_', _fname.split('.')[0]).lower()
+                            st.session_state.uploaded_datasets[_tbl_name] = _df_file
                             _df_file.to_sql(_tbl_name, st.session_state.dataset_sqlite_conn, if_exists='replace', index=False)
                             _fsize_str = f"{round(_fsize/1024,1)} KB" if _fsize < 1048576 else f"{round(_fsize/1048576,1)} MB"
                             st.toast(f"✅ '{_fname}' loaded → '{_tbl_name}' ({len(_df_file):,} rows · {_fsize_str})", icon="✅")
@@ -1827,7 +1812,7 @@ elif _page == "📊 Dashboard":
             # Schema context
             _schema_desc = []
             for _name, _df in st.session_state.uploaded_datasets.items():
-                _t_name = re.sub(r'[^a-zA-Z0-9_]', '_', _name.split('.')[0]).lower()
+                _t_name = _name
                 _cols_str = ", ".join(f"{_col}" for _col in _df.columns)
                 _schema_desc.append(f"Table: {_t_name} - Columns: [{_cols_str}] ({len(_df)} rows)")
             _schema_context_str = "\n".join(_schema_desc)
@@ -2034,726 +2019,6 @@ elif _page == "📊 Dashboard":
                 {len(st.session_state.uploaded_datasets)} dataset(s) loaded &nbsp;&middot;&nbsp;
                 &copy; 2025
             </div>""", unsafe_allow_html=True)
-        # ── Workspace Header ──
-        st.markdown("""
-        <div style="background:linear-gradient(135deg,rgba(16,185,129,0.06) 0%,rgba(139,92,246,0.04) 50%,rgba(245,158,11,0.03) 100%);
-            border:1px solid rgba(16,185,129,0.2);border-radius:16px;
-            padding:1.5rem 2rem;margin-bottom:1.5rem;position:relative;overflow:hidden;">
-            <div style="position:absolute;top:-30px;right:-30px;width:200px;height:200px;
-                background:radial-gradient(circle,rgba(139,92,246,0.08) 0%,transparent 70%);
-                pointer-events:none;"></div>
-            <div style="display:flex;align-items:center;gap:12px;margin-bottom:0.5rem;">
-                <div style="width:42px;height:42px;background:linear-gradient(135deg,#10B981,#8B5CF6);
-                    border-radius:12px;display:flex;align-items:center;justify-content:center;
-                    font-size:1.3rem;flex-shrink:0;">📁</div>
-                <div>
-                    <div style="font-size:1.2rem;font-weight:800;
-                        background:linear-gradient(90deg,#FFFFFF 0%,#10B981 60%,#8B5CF6 100%);
-                        -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-                        background-clip:text;">Multi-Dataset Analytics Workspace</div>
-                    <div style="font-size:0.78rem;color:#64748B;">
-                        Upload · Preview · Merge · Filter · Visualize · AI Analysis · Export
-                    </div>
-                </div>
-            </div>
-            <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.6rem;">
-                <span style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.25);
-                    border-radius:20px;padding:0.2rem 0.7rem;font-size:0.7rem;
-                    color:#10B981;font-weight:600;">CSV &amp; Excel</span>
-                <span style="background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.25);
-                    border-radius:20px;padding:0.2rem 0.7rem;font-size:0.7rem;
-                    color:#8B5CF6;font-weight:600;">AI-Powered Insights</span>
-                <span style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.25);
-                    border-radius:20px;padding:0.2rem 0.7rem;font-size:0.7rem;
-                    color:#F59E0B;font-weight:600;">Interactive Charts</span>
-                <span style="background:rgba(14,165,233,0.1);border:1px solid rgba(14,165,233,0.25);
-                    border-radius:20px;padding:0.2rem 0.7rem;font-size:0.7rem;
-                    color:#0EA5E9;font-weight:600;">Cross-Dataset Analysis</span>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-        # ── 1. FILE UPLOAD & MANAGEMENT ──
-        _up_col1, _up_col2 = st.columns([1, 1])
-        with _up_col1:
-            st.markdown("""
-            <div class="glass-card" style="padding:1.2rem;min-height:220px;">
-                <div style="display:flex;align-items:center;gap:8px;margin-bottom:0.8rem;">
-                    <div style="width:32px;height:32px;background:rgba(16,185,129,0.15);
-                        border:1px solid rgba(16,185,129,0.3);border-radius:8px;
-                        display:flex;align-items:center;justify-content:center;font-size:1rem;">⚡</div>
-                    <span style="font-size:0.9rem;font-weight:700;color:#F1F5F9;">Upload Datasets</span>
-                </div>
-                <div style="font-size:0.78rem;color:#64748B;margin-bottom:0.8rem;">
-                    Drag and drop CSV or Excel files to begin analysis. Each file becomes a queryable table.
-                </div>
-            """, unsafe_allow_html=True)
-            _uploaded_files = st.file_uploader(
-                "Upload CSV or Excel files",
-                type=["csv", "xlsx"],
-                accept_multiple_files=True,
-                key="ds_uploader",
-                label_visibility="collapsed"
-            )
-
-            if _uploaded_files:
-                for _f in _uploaded_files:
-                    _fname = _f.name
-                    if _fname not in st.session_state.uploaded_datasets:
-                        try:
-                            if _fname.endswith(".csv"):
-                                _df_file = pd.read_csv(_f)
-                            else:
-                                _df_file = pd.read_excel(_f)
-                            # Clean column names to be SQL-safe
-                            _clean_cols = {}
-                            for _col in _df_file.columns:
-                                _clean_name = re.sub(r'[^a-zA-Z0-9_]', '_', str(_col).strip())
-                                if not _clean_name or (not _clean_name[0].isalpha() and _clean_name[0] != '_'):
-                                    _clean_name = '_' + _clean_name
-                                _clean_cols[_col] = _clean_name
-                            _df_file = _df_file.rename(columns=_clean_cols)
-
-                            st.session_state.uploaded_datasets[_fname] = _df_file
-                            _tbl_name = re.sub(r'[^a-zA-Z0-9_]', '_', _fname.split('.')[0]).lower()
-                            _df_file.to_sql(_tbl_name, st.session_state.dataset_sqlite_conn, if_exists='replace', index=False)
-                            st.toast(f"Loaded '{_fname}' → table '{_tbl_name}'", icon="✅")
-                        except Exception as _ue:
-                            st.error(f"Error parsing '{_fname}': {_ue}")
-            st.markdown('</div>', unsafe_allow_html=True)
-
-        with _up_col2:
-            st.markdown("""
-            <div class="glass-card" style="padding:1.2rem;min-height:220px;">
-                <div style="display:flex;align-items:center;gap:8px;margin-bottom:0.8rem;">
-                    <div style="width:32px;height:32px;background:rgba(139,92,246,0.15);
-                        border:1px solid rgba(139,92,246,0.3);border-radius:8px;
-                        display:flex;align-items:center;justify-content:center;font-size:1rem;">📋</div>
-                    <span style="font-size:0.9rem;font-weight:700;color:#F1F5F9;">Loaded Datasets</span>
-                    <span style="background:rgba(16,185,129,0.15);color:#10B981;font-size:0.68rem;
-                        font-weight:700;padding:0.15rem 0.5rem;border-radius:10px;margin-left:auto;">""" + str(len(st.session_state.uploaded_datasets)) + """ loaded</span>
-                </div>
-            """, unsafe_allow_html=True)
-
-            if not st.session_state.uploaded_datasets:
-                st.markdown("""
-                <div style="text-align:center;padding:1.5rem 0;">
-                    <div style="font-size:2.5rem;margin-bottom:0.5rem;opacity:0.4;">📂</div>
-                    <div style="font-size:0.85rem;color:#475569;font-weight:600;">No datasets yet</div>
-                    <div style="font-size:0.75rem;color:#334155;margin-top:0.2rem;">Upload CSV or Excel files to begin</div>
-                </div>
-                """, unsafe_allow_html=True)
-            else:
-                _ds_list = []
-                for _name, _df in st.session_state.uploaded_datasets.items():
-                    _tbl_name = re.sub(r'[^a-zA-Z0-9_]', '_', _name.split('.')[0]).lower()
-                    _ds_list.append({
-                        "📄 File": _name,
-                        "🗃️ Table": _tbl_name,
-                        "📊 Rows": f"{len(_df):,}",
-                        "📐 Cols": str(len(_df.columns))
-                    })
-                st.dataframe(pd.DataFrame(_ds_list), use_container_width=True, hide_index=True)
-
-                _del_sel = st.selectbox("Select dataset to remove:", list(st.session_state.uploaded_datasets.keys()), key="del_ds_sel")
-                if st.button("🗑️ Delete Selected", use_container_width=True):
-                    if _del_sel in st.session_state.uploaded_datasets:
-                        del st.session_state.uploaded_datasets[_del_sel]
-                        st.toast(f"Removed '{_del_sel}'", icon="🗑️")
-                        st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
-
-        st.markdown("<br>", unsafe_allow_html=True)
-
-        # ══════════════════════════════════════════════════════════════════════
-        # ALL SECTIONS BELOW REQUIRE AT LEAST 1 UPLOADED DATASET
-        # ══════════════════════════════════════════════════════════════════════
-        if st.session_state.uploaded_datasets:
-
-            # ── 2. AUTO-GENERATED DATASET INSIGHTS (KPI SUMMARY CARDS) ──
-            st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #10B981;padding-left:0.6rem;">⚡ Auto-Generated Dataset Insights</p>', unsafe_allow_html=True)
-
-            _insight_ds = st.selectbox("Select dataset for insights:", list(st.session_state.uploaded_datasets.keys()), key="insight_ds_sel")
-            _df_ins = st.session_state.uploaded_datasets[_insight_ds]
-            _num_cols_ins = _df_ins.select_dtypes(include='number').columns.tolist()
-            _cat_cols_ins = _df_ins.select_dtypes(exclude='number').columns.tolist()
-            _total_cells = _df_ins.shape[0] * _df_ins.shape[1]
-            _total_missing = int(_df_ins.isna().sum().sum())
-            _completeness = round((1 - _total_missing / _total_cells) * 100, 1) if _total_cells > 0 else 0
-            _mem_ins = _df_ins.memory_usage(deep=True).sum()
-            _mem_ins_str = f"{round(_mem_ins/1024,1)} KB" if _mem_ins < 1048576 else f"{round(_mem_ins/1048576,2)} MB"
-            _dup_rows = int(_df_ins.duplicated().sum())
-
-            # KPI Row
-            _ik = st.columns(6)
-            _insight_kpis = [
-                (_ik[0], C1, "&#128202;", "Total Rows",     f"{len(_df_ins):,}",           "Records in dataset"),
-                (_ik[1], C2, "&#128203;", "Columns",         f"{len(_df_ins.columns)}",     f"{len(_num_cols_ins)} numeric · {len(_cat_cols_ins)} text"),
-                (_ik[2], C3, "&#9989;",   "Completeness",    f"{_completeness}%",           f"{_total_missing:,} missing cells"),
-                (_ik[3], C4, "&#128260;", "Duplicates",      f"{_dup_rows:,}",              "Duplicate rows found"),
-                (_ik[4], C5, "&#128190;", "Memory",          _mem_ins_str,                  "In-memory size"),
-                (_ik[5], C1, "&#128290;", "Unique Ratio",    f"{round(_df_ins.nunique().mean(),1)}",  "Avg unique/column"),
-            ]
-            for _col, _clr, _ico, _lbl, _val, _sub in _insight_kpis:
-                with _col:
-                    st.markdown(f"""
-                    <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);
-                        border-top:3px solid {_clr};border-radius:12px;padding:0.8rem 0.6rem;
-                        text-align:center;transition:all 0.2s;">
-                        <div style="font-size:1.1rem;margin-bottom:0.2rem;">{_ico}</div>
-                        <div style="font-size:0.65rem;font-weight:700;color:#64748B;
-                            text-transform:uppercase;letter-spacing:0.08em;">{_lbl}</div>
-                        <div style="font-size:1.3rem;font-weight:800;color:{_clr};
-                            line-height:1.1;margin:0.15rem 0;">{_val}</div>
-                        <div style="font-size:0.62rem;color:#475569;">{_sub}</div>
-                    </div>""", unsafe_allow_html=True)
-
-            st.markdown("<br>", unsafe_allow_html=True)
-
-            # ── 3. DATA QUALITY PROFILING ──
-            st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #10B981;padding-left:0.6rem;">🔬 Data Quality Profile</p>', unsafe_allow_html=True)
-            st.markdown('<div class="glass-card" style="padding:1.2rem;">', unsafe_allow_html=True)
-
-            _quality_tabs = st.tabs(["📄 Data Preview", "📋 Column Profile", "📈 Statistics", "🩺 Data Health"])
-
-            with _quality_tabs[0]:
-                _num_rows = st.slider("Rows to display:", 5, min(200, len(_df_ins)), 15, key="ds_prev_rows")
-                st.dataframe(_df_ins.head(_num_rows), use_container_width=True, hide_index=True)
-
-            with _quality_tabs[1]:
-                _cols_info = []
-                for _c in _df_ins.columns:
-                    _dtype = str(_df_ins[_c].dtype)
-                    _nulls = int(_df_ins[_c].isna().sum())
-                    _uniques = int(_df_ins[_c].nunique())
-                    _sample = str(_df_ins[_c].dropna().iloc[0])[:30] if not _df_ins[_c].dropna().empty else "—"
-                    _cols_info.append({
-                        "Column": _c,
-                        "Type": _dtype,
-                        "Missing": f"{_nulls:,} ({round((_nulls/len(_df_ins))*100,1)}%)" if len(_df_ins) > 0 else "0",
-                        "Unique": f"{_uniques:,}",
-                        "Sample": _sample
-                    })
-                st.dataframe(pd.DataFrame(_cols_info), use_container_width=True, hide_index=True)
-
-            with _quality_tabs[2]:
-                if not _num_cols_ins:
-                    st.info("No numerical columns in this dataset.")
-                else:
-                    st.dataframe(_df_ins[_num_cols_ins].describe().round(2), use_container_width=True)
-
-            with _quality_tabs[3]:
-                # Data health score
-                _health_score = _completeness
-                _health_color = "#10B981" if _health_score >= 90 else "#F59E0B" if _health_score >= 70 else "#EF4444"
-                _health_label = "Excellent" if _health_score >= 90 else "Good" if _health_score >= 70 else "Needs Attention"
-
-                st.markdown(f"""
-                <div style="text-align:center;padding:1.5rem 0;">
-                    <div style="font-size:3rem;font-weight:900;color:{_health_color};line-height:1;">{_health_score}%</div>
-                    <div style="font-size:0.85rem;font-weight:700;color:{_health_color};margin-top:0.3rem;">{_health_label}</div>
-                    <div style="font-size:0.72rem;color:#475569;margin-top:0.2rem;">Data Quality Score</div>
-                </div>
-                """, unsafe_allow_html=True)
-
-                _health_items = []
-                # Check missing data
-                if _total_missing == 0:
-                    _health_items.append(("✅", "No missing values", "All cells have data"))
-                elif _completeness >= 95:
-                    _health_items.append(("⚠️", f"{_total_missing:,} missing values", f"Data is {_completeness}% complete"))
-                else:
-                    _health_items.append(("❌", f"{_total_missing:,} missing values", f"Only {_completeness}% complete — consider cleaning"))
-                # Check duplicates
-                if _dup_rows == 0:
-                    _health_items.append(("✅", "No duplicate rows", "All records are unique"))
-                else:
-                    _health_items.append(("⚠️", f"{_dup_rows:,} duplicate rows found", "Consider deduplication"))
-                # Check column types
-                _health_items.append(("ℹ️", f"{len(_num_cols_ins)} numeric, {len(_cat_cols_ins)} categorical columns", "Column type distribution"))
-
-                for _hi_icon, _hi_title, _hi_desc in _health_items:
-                    st.markdown(f"""
-                    <div style="display:flex;align-items:center;gap:10px;padding:0.5rem 0.8rem;
-                        background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);
-                        border-radius:8px;margin-bottom:0.4rem;">
-                        <span style="font-size:1.1rem;">{_hi_icon}</span>
-                        <div>
-                            <div style="font-size:0.82rem;font-weight:600;color:#E2E8F0;">{_hi_title}</div>
-                            <div style="font-size:0.72rem;color:#475569;">{_hi_desc}</div>
-                        </div>
-                    </div>""", unsafe_allow_html=True)
-
-            st.markdown('</div>', unsafe_allow_html=True)
-            st.markdown("<br>", unsafe_allow_html=True)
-
-            # ── 4. CORRELATION HEATMAP ──
-            if len(_num_cols_ins) >= 2:
-                st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #10B981;padding-left:0.6rem;">🔥 Correlation Heatmap</p>', unsafe_allow_html=True)
-                st.markdown('<div class="glass-card" style="padding:1.2rem;">', unsafe_allow_html=True)
-                st.markdown('<p style="font-size:0.8rem;color:#94A3B8;margin-bottom:0.8rem;">Pearson correlation between all numeric columns. Stronger correlations are highlighted.</p>', unsafe_allow_html=True)
-
-                try:
-                    _corr = _df_ins[_num_cols_ins].corr().round(2)
-                    import plotly.figure_factory as ff
-                    _heatmap_fig = go.Figure(data=go.Heatmap(
-                        z=_corr.values,
-                        x=_corr.columns.tolist(),
-                        y=_corr.columns.tolist(),
-                        colorscale=[[0,"#1E1B4B"],[0.25,"#312E81"],[0.5,"#0F172A"],[0.75,"#065F46"],[1,"#10B981"]],
-                        text=_corr.values.round(2),
-                        texttemplate="%{text}",
-                        textfont=dict(size=11, color="#E2E8F0"),
-                        hovertemplate="<b>%{x} vs %{y}</b><br>Correlation: %{z:.2f}<extra></extra>",
-                        showscale=True,
-                        colorbar=dict(tickfont=dict(color="#64748B"), title=dict(text="r", font=dict(color="#64748B")))
-                    ))
-                    _heatmap_fig.update_layout(
-                        paper_bgcolor=BG, plot_bgcolor=BG, font=FONT,
-                        height=max(280, len(_num_cols_ins) * 40),
-                        margin=dict(t=10, b=10, l=10, r=10),
-                        xaxis=dict(color="#475569", tickangle=45),
-                        yaxis=dict(color="#475569", autorange="reversed")
-                    )
-                    st.plotly_chart(_heatmap_fig, use_container_width=True)
-                except Exception as _he:
-                    st.error(f"Heatmap error: {_he}")
-
-                st.markdown('</div>', unsafe_allow_html=True)
-                st.markdown("<br>", unsafe_allow_html=True)
-
-            # ── 5. DATASET COMBINER / JOIN BUILDER ──
-            if len(st.session_state.uploaded_datasets) >= 2:
-                st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #10B981;padding-left:0.6rem;">🔀 Dataset Combiner / Join Builder</p>', unsafe_allow_html=True)
-                st.markdown('<div class="glass-card" style="padding:1.2rem;">', unsafe_allow_html=True)
-                st.markdown('<p style="font-size:0.8rem;color:#94A3B8;margin-bottom:1rem;">Merge two uploaded datasets on a shared key column.</p>', unsafe_allow_html=True)
-
-                _join_col1, _join_col2, _join_col3 = st.columns([2, 2, 1])
-                with _join_col1:
-                    _left_sel = st.selectbox("Left Dataset:", list(st.session_state.uploaded_datasets.keys()), index=0, key="join_left")
-                    _left_key = st.selectbox("Left Join Column:", st.session_state.uploaded_datasets[_left_sel].columns.tolist(), key="join_left_key")
-                with _join_col2:
-                    _right_index = 1 if len(st.session_state.uploaded_datasets) > 1 else 0
-                    _right_sel = st.selectbox("Right Dataset:", list(st.session_state.uploaded_datasets.keys()), index=_right_index, key="join_right")
-                    _right_key = st.selectbox("Right Join Column:", st.session_state.uploaded_datasets[_right_sel].columns.tolist(), key="join_right_key")
-                with _join_col3:
-                    _join_how = st.selectbox("Join Type:", ["inner", "left", "right", "outer"], index=1, key="join_how")
-                    st.markdown("<br>", unsafe_allow_html=True)
-                    _do_join = st.button("⚡ Merge Datasets", use_container_width=True)
-
-                if _do_join:
-                    if _left_sel == _right_sel:
-                        st.error("Cannot join a dataset with itself.")
-                    else:
-                        try:
-                            _df_l = st.session_state.uploaded_datasets[_left_sel]
-                            _df_r = st.session_state.uploaded_datasets[_right_sel]
-                            _df_merged = pd.merge(_df_l, _df_r, left_on=_left_key, right_on=_right_key, how=_join_how, suffixes=('_left', '_right'))
-                            _mname = f"merged_{_left_sel.split('.')[0]}_{_right_sel.split('.')[0]}.csv"
-                            st.session_state.uploaded_datasets[_mname] = _df_merged
-                            _tbl_m = re.sub(r'[^a-zA-Z0-9_]', '_', _mname.split('.')[0]).lower()
-                            _df_merged.to_sql(_tbl_m, st.session_state.dataset_sqlite_conn, if_exists='replace', index=False)
-                            st.success(f"Created '{_tbl_m}' — {len(_df_merged):,} rows × {len(_df_merged.columns)} columns")
-                            st.toast(f"Merged table '{_tbl_m}' ready!", icon="🔀")
-                            time.sleep(1)
-                            st.rerun()
-                        except Exception as _je:
-                            st.error(f"Merge failed: {_je}")
-                st.markdown('</div>', unsafe_allow_html=True)
-                st.markdown("<br>", unsafe_allow_html=True)
-
-            # ── 6. CROSS-DATASET COMPARISON ──
-            if len(st.session_state.uploaded_datasets) >= 2:
-                st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #10B981;padding-left:0.6rem;">⚖️ Cross-Dataset Comparison</p>', unsafe_allow_html=True)
-                st.markdown('<div class="glass-card" style="padding:1.2rem;">', unsafe_allow_html=True)
-                st.markdown('<p style="font-size:0.8rem;color:#94A3B8;margin-bottom:0.8rem;">Compare key statistics side-by-side between two datasets.</p>', unsafe_allow_html=True)
-
-                _cmp_c1, _cmp_c2 = st.columns(2)
-                with _cmp_c1:
-                    _cmp_left = st.selectbox("Dataset A:", list(st.session_state.uploaded_datasets.keys()), index=0, key="cmp_left")
-                with _cmp_c2:
-                    _cmp_right_idx = min(1, len(st.session_state.uploaded_datasets) - 1)
-                    _cmp_right = st.selectbox("Dataset B:", list(st.session_state.uploaded_datasets.keys()), index=_cmp_right_idx, key="cmp_right")
-
-                _df_cmp_a = st.session_state.uploaded_datasets[_cmp_left]
-                _df_cmp_b = st.session_state.uploaded_datasets[_cmp_right]
-
-                _cmp_data = {
-                    "Metric": ["Rows", "Columns", "Numeric Cols", "Text Cols", "Missing Cells", "Duplicate Rows", "Memory"],
-                    f"📄 {_cmp_left[:20]}": [
-                        f"{len(_df_cmp_a):,}",
-                        str(len(_df_cmp_a.columns)),
-                        str(len(_df_cmp_a.select_dtypes(include='number').columns)),
-                        str(len(_df_cmp_a.select_dtypes(exclude='number').columns)),
-                        f"{int(_df_cmp_a.isna().sum().sum()):,}",
-                        f"{int(_df_cmp_a.duplicated().sum()):,}",
-                        f"{round(_df_cmp_a.memory_usage(deep=True).sum()/1024,1)} KB"
-                    ],
-                    f"📄 {_cmp_right[:20]}": [
-                        f"{len(_df_cmp_b):,}",
-                        str(len(_df_cmp_b.columns)),
-                        str(len(_df_cmp_b.select_dtypes(include='number').columns)),
-                        str(len(_df_cmp_b.select_dtypes(exclude='number').columns)),
-                        f"{int(_df_cmp_b.isna().sum().sum()):,}",
-                        f"{int(_df_cmp_b.duplicated().sum()):,}",
-                        f"{round(_df_cmp_b.memory_usage(deep=True).sum()/1024,1)} KB"
-                    ]
-                }
-                st.dataframe(pd.DataFrame(_cmp_data), use_container_width=True, hide_index=True)
-
-                # Find shared columns
-                _shared_cols = list(set(_df_cmp_a.columns) & set(_df_cmp_b.columns))
-                if _shared_cols:
-                    st.markdown(f"""
-                    <div style="background:rgba(14,165,233,0.06);border:1px solid rgba(14,165,233,0.2);
-                        border-radius:8px;padding:0.6rem 1rem;margin-top:0.6rem;">
-                        <span style="color:#0EA5E9;font-weight:700;font-size:0.8rem;">🔗 Shared Columns ({len(_shared_cols)}):</span>
-                        <span style="color:#94A3B8;font-size:0.78rem;margin-left:0.4rem;">{", ".join(_shared_cols[:10])}{" ..." if len(_shared_cols) > 10 else ""}</span>
-                    </div>""", unsafe_allow_html=True)
-
-                st.markdown('</div>', unsafe_allow_html=True)
-                st.markdown("<br>", unsafe_allow_html=True)
-
-            # ── 7. INTERACTIVE FILTER SLICER ──
-            st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #10B981;padding-left:0.6rem;">🎛️ Interactive Data Slicer</p>', unsafe_allow_html=True)
-            st.markdown('<div class="glass-card" style="padding:1.2rem;">', unsafe_allow_html=True)
-
-            _slice_ds = st.selectbox("Dataset to filter:", list(st.session_state.uploaded_datasets.keys()), key="slice_ds")
-            _df_slice = st.session_state.uploaded_datasets[_slice_ds]
-
-            _s1, _s2, _s3 = st.columns([2, 1, 3])
-            with _s1:
-                _slice_col = st.selectbox("Column:", _df_slice.columns.tolist(), key="slice_col")
-            with _s2:
-                _is_num = pd.api.types.is_numeric_dtype(_df_slice[_slice_col])
-                _ops = ["==", "contains", "!=", ">", "<", ">=", "<="] if _is_num else ["==", "contains", "!=", "starts with"]
-                _slice_op = st.selectbox("Operator:", _ops, key="slice_op")
-            with _s3:
-                if _is_num:
-                    _min_v = float(_df_slice[_slice_col].min()) if not _df_slice[_slice_col].isna().all() else 0.0
-                    _max_v = float(_df_slice[_slice_col].max()) if not _df_slice[_slice_col].isna().all() else 100.0
-                    _slice_val = st.number_input("Value:", value=float((_min_v + _max_v) / 2), key="slice_val_num")
-                else:
-                    _unq_vals = _df_slice[_slice_col].dropna().unique().tolist()
-                    if len(_unq_vals) < 40:
-                        _slice_val = st.selectbox("Value:", _unq_vals, key="slice_val_select")
-                    else:
-                        _slice_val = st.text_input("Search Term:", key="slice_val_text")
-
-            _df_filtered = _df_slice.copy()
-            try:
-                if _slice_op == "==":
-                    _df_filtered = _df_filtered[_df_filtered[_slice_col] == _slice_val]
-                elif _slice_op == "!=":
-                    _df_filtered = _df_filtered[_df_filtered[_slice_col] != _slice_val]
-                elif _slice_op == "contains" and not _is_num:
-                    _df_filtered = _df_filtered[_df_filtered[_slice_col].astype(str).str.contains(str(_slice_val), case=False, na=False)]
-                elif _slice_op == "contains" and _is_num:
-                    _df_filtered = _df_filtered[_df_filtered[_slice_col].astype(str).str.contains(str(_slice_val), na=False)]
-                elif _slice_op == "starts with":
-                    _df_filtered = _df_filtered[_df_filtered[_slice_col].astype(str).str.startswith(str(_slice_val), na=False)]
-                elif _slice_op == ">":
-                    _df_filtered = _df_filtered[_df_filtered[_slice_col] > float(_slice_val)]
-                elif _slice_op == "<":
-                    _df_filtered = _df_filtered[_df_filtered[_slice_col] < float(_slice_val)]
-                elif _slice_op == ">=":
-                    _df_filtered = _df_filtered[_df_filtered[_slice_col] >= float(_slice_val)]
-                elif _slice_op == "<=":
-                    _df_filtered = _df_filtered[_df_filtered[_slice_col] <= float(_slice_val)]
-
-                st.markdown(f"""
-                <div style="display:flex;align-items:center;gap:8px;margin:0.4rem 0;">
-                    <span style="color:#10B981;font-size:0.8rem;font-weight:600;">✓ {len(_df_filtered):,} of {len(_df_slice):,} rows</span>
-                    <span style="color:#475569;font-size:0.72rem;">({round(len(_df_filtered)/max(len(_df_slice),1)*100,1)}% match)</span>
-                </div>""", unsafe_allow_html=True)
-                st.dataframe(_df_filtered.head(100), use_container_width=True, hide_index=True)
-
-                _fd1, _fd2 = st.columns([2, 5])
-                with _fd1:
-                    st.download_button(
-                        "📥 Export Filtered CSV",
-                        data=_df_filtered.to_csv(index=False),
-                        file_name=f"filtered_{_slice_ds}",
-                        mime="text/csv",
-                        use_container_width=True
-                    )
-            except Exception as _fe:
-                st.error(f"Filter error: {_fe}")
-
-            st.markdown('</div>', unsafe_allow_html=True)
-            st.markdown("<br>", unsafe_allow_html=True)
-
-            # ── 8. ENHANCED PLOTLY VISUALIZER ──
-            st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #10B981;padding-left:0.6rem;">📊 Interactive Chart Builder</p>', unsafe_allow_html=True)
-            st.markdown('<div class="glass-card" style="padding:1.2rem;">', unsafe_allow_html=True)
-            st.markdown('<p style="font-size:0.8rem;color:#94A3B8;margin-bottom:0.8rem;">Build custom Plotly visualizations with 7 chart types. Select axes and grouping options below.</p>', unsafe_allow_html=True)
-
-            _vis_ds = st.selectbox("Select dataset:", list(st.session_state.uploaded_datasets.keys()), key="vis_ds")
-            _df_vis = st.session_state.uploaded_datasets[_vis_ds]
-
-            _v1, _v2, _v3, _v4 = st.columns([1.5, 1.5, 1.5, 1.5])
-            with _v1:
-                _vtype = st.selectbox("Chart Type:", [
-                    "Bar Chart", "Line Chart", "Scatter Plot", "Pie Chart",
-                    "Area Chart", "Histogram", "Box Plot"
-                ], key="vis_type")
-            with _v2:
-                _vx = st.selectbox("X-Axis:", _df_vis.columns.tolist(), key="vis_x")
-            with _v3:
-                _num_cols_vis = _df_vis.select_dtypes(include='number').columns.tolist()
-                _all_cols_vis = _df_vis.columns.tolist()
-                if _vtype in ["Histogram", "Box Plot"]:
-                    _vy_opts = _num_cols_vis if _num_cols_vis else _all_cols_vis
-                elif _vtype == "Pie Chart":
-                    _vy_opts = _all_cols_vis
-                else:
-                    _vy_opts = _num_cols_vis if _num_cols_vis else _all_cols_vis
-                if not _vy_opts:
-                    _vy_opts = ["None"]
-                _vy = st.selectbox("Y-Axis / Metric:", _vy_opts, key="vis_y")
-            with _v4:
-                _cat_cols_vis = _df_vis.select_dtypes(exclude='number').columns.tolist()
-                _vcolor = st.selectbox("Group By (color):", ["None"] + _cat_cols_vis, key="vis_color")
-
-            try:
-                _chart_df = _df_vis.head(200)
-                _color_arg = None if _vcolor == "None" else _vcolor
-
-                _fig = None
-                if _vtype == "Bar Chart":
-                    _fig = px.bar(_chart_df, x=_vx, y=_vy, color=_color_arg, color_discrete_sequence=PAL)
-                elif _vtype == "Line Chart":
-                    _fig = px.line(_chart_df, x=_vx, y=_vy, color=_color_arg, color_discrete_sequence=PAL)
-                elif _vtype == "Scatter Plot":
-                    _fig = px.scatter(_chart_df, x=_vx, y=_vy, color=_color_arg, color_discrete_sequence=PAL,
-                                      opacity=0.7)
-                elif _vtype == "Area Chart":
-                    _fig = px.area(_chart_df, x=_vx, y=_vy, color=_color_arg, color_discrete_sequence=PAL)
-                elif _vtype == "Pie Chart":
-                    _fig = px.pie(_chart_df, names=_vx, values=_vy, color_discrete_sequence=PAL, hole=0.45)
-                elif _vtype == "Histogram":
-                    _fig = px.histogram(_chart_df, x=_vy, nbins=30, color=_color_arg,
-                                         color_discrete_sequence=PAL, opacity=0.85)
-                elif _vtype == "Box Plot":
-                    _fig = px.box(_chart_df, x=_color_arg if _color_arg else _vx, y=_vy,
-                                  color=_color_arg, color_discrete_sequence=PAL)
-
-                if _fig is not None:
-                    _fig.update_layout(**LO, height=350)
-                    if _vtype not in ["Pie Chart"]:
-                        _fig.update_layout(
-                            xaxis=dict(showgrid=False, color="#475569"),
-                            yaxis=dict(showgrid=True, gridcolor=GRID, color="#475569")
-                        )
-                    st.plotly_chart(_fig, use_container_width=True)
-                    st.markdown(f"""
-                    <div style="display:flex;align-items:center;justify-content:space-between;padding:0.4rem 0.8rem;
-                        background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);
-                        border-radius:8px;margin-top:0.3rem;">
-                        <span style="font-size:0.72rem;color:#475569;">
-                            {_vtype} · {_vis_ds} · Top {min(200, len(_df_vis))} rows
-                        </span>
-                        <span style="font-size:0.68rem;color:#334155;">
-                            X: {_vx} · Y: {_vy}{f" · Color: {_vcolor}" if _vcolor != "None" else ""}
-                        </span>
-                    </div>""", unsafe_allow_html=True)
-            except Exception as _ve:
-                st.error(f"Chart error: {_ve}")
-
-            st.markdown('</div>', unsafe_allow_html=True)
-            st.markdown("<br>", unsafe_allow_html=True)
-
-            # ── 9. AI COPILOT FOR UPLOADED DATASETS ──
-            st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #10B981;padding-left:0.6rem;">🧠 AI Copilot — Natural Language Analysis</p>', unsafe_allow_html=True)
-            st.markdown("""
-            <div class="glass-card" style="padding:1.2rem;border-top:3px solid #8B5CF6;">
-                <div style="display:flex;align-items:center;gap:10px;margin-bottom:0.8rem;">
-                    <div style="width:36px;height:36px;background:linear-gradient(135deg,#8B5CF6,#6D28D9);
-                        border-radius:10px;display:flex;align-items:center;justify-content:center;
-                        font-size:1.1rem;animation:glow 3s ease-in-out infinite;">🧠</div>
-                    <div>
-                        <div style="font-size:0.9rem;font-weight:700;color:#F1F5F9;">AI Dataset Copilot</div>
-                        <div style="font-size:0.72rem;color:#64748B;">Ask questions about your data in plain English — AI writes SQL, runs it, and summarizes findings.</div>
-                    </div>
-                </div>
-            """, unsafe_allow_html=True)
-
-            # Schema context
-            _schema_desc = []
-            for _name, _df in st.session_state.uploaded_datasets.items():
-                _t_name = re.sub(r'[^a-zA-Z0-9_]', '_', _name.split('.')[0]).lower()
-                _cols_str = ", ".join(f"{_col}" for _col in _df.columns)
-                _schema_desc.append(f"Table: {_t_name} - Columns: [{_cols_str}]")
-            _schema_context_str = "\n".join(_schema_desc)
-
-            with st.expander("👁️ View Schema Context (sent to AI)"):
-                st.code(_schema_context_str, language="text")
-
-            # Example queries
-            _example_queries = [
-                "Count total rows in each table",
-                "Show the top 10 records by the highest numeric column",
-                "Find average values grouped by the first text column",
-                "What are the unique values in the first column?"
-            ]
-            st.markdown('<div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-bottom:0.6rem;">', unsafe_allow_html=True)
-            for _eq in _example_queries:
-                st.markdown(f"""<span style="display:inline-block;background:rgba(139,92,246,0.08);
-                    border:1px solid rgba(139,92,246,0.2);color:#A78BFA;font-size:0.72rem;
-                    padding:0.25rem 0.6rem;border-radius:20px;">{_eq}</span>""", unsafe_allow_html=True)
-            st.markdown('</div>', unsafe_allow_html=True)
-
-            with st.form("ds_ai_form"):
-                _ds_question = st.text_area(
-                    "Ask the AI Copilot:",
-                    placeholder="e.g. Find the average sales grouped by category...\ne.g. What is the total quantity ordered per product?",
-                    key="ds_ai_q",
-                    height=100
-                )
-                _ds_sub = st.form_submit_button("⚡ Analyze with AI Copilot", use_container_width=True)
-
-            if _ds_sub and _ds_question.strip():
-                with st.spinner("🧠 AI is analyzing your datasets..."):
-                    try:
-                        _ds_sql = query_uploaded_datasets(_ds_question.strip(), _schema_context_str)
-
-                        st.markdown('<span style="font-size:0.8rem;font-weight:700;color:#8B5CF6;">Generated SQLite Query</span>', unsafe_allow_html=True)
-                        st.code(_ds_sql, language="sql")
-
-                        _df_res = pd.read_sql_query(_ds_sql, st.session_state.dataset_sqlite_conn)
-
-                        if _df_res is not None and not _df_res.empty:
-                            # Results KPIs
-                            _rk1, _rk2, _rk3 = st.columns(3)
-                            with _rk1:
-                                st.markdown(f'<div class="kpi-tile"><div class="kpi-tile-val">{len(_df_res):,}</div><div class="kpi-tile-lbl">Result Rows</div></div>', unsafe_allow_html=True)
-                            with _rk2:
-                                st.markdown(f'<div class="kpi-tile"><div class="kpi-tile-val">{len(_df_res.columns)}</div><div class="kpi-tile-lbl">Columns</div></div>', unsafe_allow_html=True)
-                            with _rk3:
-                                _res_mem = round(_df_res.memory_usage(deep=True).sum() / 1024, 1)
-                                st.markdown(f'<div class="kpi-tile"><div class="kpi-tile-val">{_res_mem} KB</div><div class="kpi-tile-lbl">Result Size</div></div>', unsafe_allow_html=True)
-
-                            st.markdown("<br>", unsafe_allow_html=True)
-                            st.dataframe(_df_res, use_container_width=True, hide_index=True)
-
-                            # Auto-chart for results
-                            _res_num = _df_res.select_dtypes(include='number').columns.tolist()
-                            _res_cat = _df_res.select_dtypes(exclude='number').columns.tolist()
-                            if _res_num and _res_cat and len(_df_res) > 1:
-                                try:
-                                    _auto_fig = px.bar(_df_res.head(20), x=_res_cat[0], y=_res_num[0],
-                                                        color_discrete_sequence=["#8B5CF6"])
-                                    _auto_fig.update_layout(**LO, height=280,
-                                        xaxis=dict(showgrid=False, color="#475569"),
-                                        yaxis=dict(showgrid=True, gridcolor=GRID, color="#475569"))
-                                    st.plotly_chart(_auto_fig, use_container_width=True)
-                                except Exception:
-                                    pass
-
-                            # AI Insight
-                            _df_summary = _df_res.head(15).to_string()
-                            _ai_insight_txt = generate_ai_insight(_ds_question.strip(), _ds_sql, _df_summary)
-
-                            st.markdown(f"""
-                            <div style="background:linear-gradient(135deg,rgba(139,92,246,0.06),rgba(16,185,129,0.04));
-                                border:1px solid rgba(139,92,246,0.25);
-                                border-radius:12px;padding:1rem 1.2rem;margin-top:0.8rem;">
-                                <div style="display:flex;align-items:center;gap:8px;margin-bottom:0.4rem;">
-                                    <span style="font-size:1.1rem;">💡</span>
-                                    <span style="color:#A78BFA;font-weight:700;font-size:0.85rem;">AI Executive Summary</span>
-                                </div>
-                                <p style="color:#E2E8F0;font-size:0.83rem;margin:0;line-height:1.7;">{_ai_insight_txt}</p>
-                            </div>
-                            """, unsafe_allow_html=True)
-
-                            st.markdown("<br>", unsafe_allow_html=True)
-                            _dl1, _dl2 = st.columns([1, 3])
-                            with _dl1:
-                                st.download_button(
-                                    "📥 Download Results CSV",
-                                    data=_df_res.to_csv(index=False),
-                                    file_name="ai_copilot_results.csv",
-                                    mime="text/csv",
-                                    use_container_width=True
-                                )
-                        else:
-                            st.info("Query returned 0 rows.")
-                    except Exception as _aie:
-                        st.markdown(f'<div class="toast-error">❌ Copilot Error: {_aie}</div>', unsafe_allow_html=True)
-                        st.info("Tip: Check table/column names in the schema context above.")
-
-            st.markdown('</div>', unsafe_allow_html=True)
-            st.markdown("<br>", unsafe_allow_html=True)
-
-            # ── 10. DOWNLOADABLE SUMMARY REPORT ──
-            st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #10B981;padding-left:0.6rem;">📋 Downloadable Summary Report</p>', unsafe_allow_html=True)
-            st.markdown('<div class="glass-card" style="padding:1.2rem;">', unsafe_allow_html=True)
-            st.markdown('<p style="font-size:0.8rem;color:#94A3B8;margin-bottom:0.8rem;">Generate a comprehensive text report of all loaded datasets — download as CSV or text.</p>', unsafe_allow_html=True)
-
-            if st.button("📋 Generate Summary Report", use_container_width=True, key="gen_report"):
-                _report_lines = []
-                _report_lines.append("=" * 70)
-                _report_lines.append("  AAITECH — MULTI-DATASET ANALYTICS SUMMARY REPORT")
-                _report_lines.append(f"  Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-                _report_lines.append("=" * 70)
-                _report_lines.append("")
-
-                for _rname, _rdf in st.session_state.uploaded_datasets.items():
-                    _tbl = re.sub(r'[^a-zA-Z0-9_]', '_', _rname.split('.')[0]).lower()
-                    _r_num = _rdf.select_dtypes(include='number').columns.tolist()
-                    _r_cat = _rdf.select_dtypes(exclude='number').columns.tolist()
-                    _r_miss = int(_rdf.isna().sum().sum())
-                    _r_dups = int(_rdf.duplicated().sum())
-                    _r_total = _rdf.shape[0] * _rdf.shape[1]
-                    _r_comp = round((1 - _r_miss / _r_total) * 100, 1) if _r_total > 0 else 0
-
-                    _report_lines.append(f"━━━ Dataset: {_rname} (table: {_tbl}) ━━━")
-                    _report_lines.append(f"  Rows: {len(_rdf):,}  |  Columns: {len(_rdf.columns)}")
-                    _report_lines.append(f"  Numeric columns: {len(_r_num)}  |  Text columns: {len(_r_cat)}")
-                    _report_lines.append(f"  Missing values: {_r_miss:,}  |  Completeness: {_r_comp}%")
-                    _report_lines.append(f"  Duplicate rows: {_r_dups:,}")
-                    _report_lines.append(f"  Columns: {', '.join(_rdf.columns.tolist())}")
-                    _report_lines.append("")
-
-                    if _r_num:
-                        _desc = _rdf[_r_num].describe().round(2)
-                        _report_lines.append("  Numeric Summary:")
-                        for _stat_row in _desc.to_string().split('\n'):
-                            _report_lines.append(f"    {_stat_row}")
-                        _report_lines.append("")
-
-                    _report_lines.append("")
-
-                _report_lines.append("=" * 70)
-                _report_lines.append("  END OF REPORT")
-                _report_lines.append("=" * 70)
-
-                _report_text = "\n".join(_report_lines)
-                st.code(_report_text, language="text")
-
-                _rpt1, _rpt2 = st.columns([1, 3])
-                with _rpt1:
-                    st.download_button(
-                        "📥 Download Report (.txt)",
-                        data=_report_text,
-                        file_name=f"dataset_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
-                        mime="text/plain",
-                        use_container_width=True
-                    )
-
-            st.markdown('</div>', unsafe_allow_html=True)
-
-            # ── Workspace Footer ──
-            st.markdown(f"""
-            <div style="text-align:center;padding:1rem 0 0.5rem;
-                color:#334155;font-size:0.72rem;
-                border-top:1px solid rgba(255,255,255,0.05);margin-top:1rem;">
-                AaiTech Industries &nbsp;&middot;&nbsp;
-                Multi-Dataset Analytics Workspace &nbsp;&middot;&nbsp;
-                {len(st.session_state.uploaded_datasets)} dataset(s) loaded &nbsp;&middot;&nbsp;
-                &copy; 2025
-            </div>""", unsafe_allow_html=True)
-
 # ══════════════════════════════════════════════════════════════════════════════
 # HISTORY PAGE
 # ══════════════════════════════════════════════════════════════════════════════
