@@ -55,13 +55,17 @@ def get_search_client():
     if _search_client is None:
         if _is_placeholder(AZURE_SEARCH_ENDPOINT) or _is_placeholder(AZURE_SEARCH_KEY):
             return None
-        from azure.search.documents import SearchClient
-        from azure.core.credentials import AzureKeyCredential
-        _search_client = SearchClient(
-            endpoint=AZURE_SEARCH_ENDPOINT,
-            index_name=INDEX_NAME,
-            credential=AzureKeyCredential(AZURE_SEARCH_KEY)
-        )
+        try:
+            from azure.search.documents import SearchClient
+            from azure.core.credentials import AzureKeyCredential
+            _search_client = SearchClient(
+                endpoint=AZURE_SEARCH_ENDPOINT,
+                index_name=INDEX_NAME,
+                credential=AzureKeyCredential(AZURE_SEARCH_KEY)
+            )
+        except ImportError:
+            print("Warning: azure-search-documents not installed. Azure Search disabled.")
+            return None
     return _search_client
 
 

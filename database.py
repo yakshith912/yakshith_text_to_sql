@@ -1,7 +1,5 @@
 import os
 import sqlite3
-import subprocess
-import time
 from typing import Tuple
 from dotenv import load_dotenv
 import pandas as pd
@@ -23,24 +21,9 @@ MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "")
 MYSQL_DATABASE = os.getenv("MYSQL_DATABASE", "aaitech")
 
 # Connection cache and active database type selector ('mysql' or 'sqlite')
-DB_TYPE = os.getenv("DB_TYPE", "mysql").lower()
+# On Render: DB_TYPE env var is set to 'sqlite' in render.yaml
+DB_TYPE = os.getenv("DB_TYPE", "sqlite").lower()
 _conn = None
-
-
-def _try_start_mysql():
-    """Attempt to start XAMPP MySQL if it's not running (for local environments)."""
-    try:
-        mysqld = r"C:\xampp\mysql\bin\mysqld.exe"
-        myini  = r"C:\xampp\mysql\bin\my.ini"
-        if os.path.exists(mysqld):
-            subprocess.Popen(
-                [mysqld, f"--defaults-file={myini}", "--standalone"],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL
-            )
-            time.sleep(4)   # give it time to start
-    except Exception:
-        pass
 
 
 def _is_connected() -> bool:
@@ -77,7 +60,13 @@ def _create_connection(timeout: int = 5):
 
 
 def _get_sqlite_path() -> str:
-    """Get the path for the SQLite database file."""
+    """Get the path for the SQLite database file.
+    On Render: uses /tmp which is writable. Falls back to local data/ directory.
+    """
+    # On Render or any read-only filesystem, use /tmp for the writable DB
+    if os.getenv("RENDER") == "true":
+        tmp_dir = "/tmp"
+        return os.path.join(tmp_dir, "aaitech.db")
     base_dir = os.path.dirname(os.path.abspath(__file__))
     db_dir = os.path.join(base_dir, "data")
     os.makedirs(db_dir, exist_ok=True)
@@ -93,6 +82,7 @@ def _initialize_sqlite_db(conn):
         
         if not exists:
             print("SQLite: Seeding database from CSV files...")
+            # CSV files are always relative to this source file
             base_dir = os.path.dirname(os.path.abspath(__file__))
             csv_files = {
                 "customers": os.path.join(base_dir, "data", "customers.csv"),
@@ -135,13 +125,16 @@ def get_connection(auto_start: bool = True):
     if _is_connected():
         return _conn
 
-    # Bypass MySQL if explicitly set to SQLite or on Render with localhost MySQL
+    # Bypass MySQL if:
+    # - explicitly set to sqlite
+    # - mysql connector not installed
+    # - running on Render with a localhost MySQL (no MySQL on Render)
     bypass_mysql = False
     if DB_TYPE == "sqlite":
         bypass_mysql = True
     elif not MYSQL_AVAILABLE:
         bypass_mysql = True
-    elif os.getenv("RENDER") == "true" and MYSQL_HOST in ("127.0.0.1", "localhost"):
+    elif os.getenv("RENDER") == "true":
         bypass_mysql = True
 
     if bypass_mysql:
@@ -158,18 +151,7 @@ def get_connection(auto_start: bool = True):
         print("Connected to MySQL.")
         return _conn
     except Exception as mysql_err:
-        # Try auto-starting local MySQL (Windows/XAMPP only)
-        if auto_start and "2003" in str(mysql_err) and os.name == 'nt':
-            try:
-                _try_start_mysql()
-                _conn = _create_connection(timeout=5)
-                DB_TYPE = "mysql"
-                print("Connected to MySQL after auto-start.")
-                return _conn
-            except Exception:
-                pass
-                
-        # 2. Fall back to SQLite
+        # 2. Fall back to SQLite (no XAMPP auto-start — not applicable on Render)
         print(f"MySQL unavailable ({mysql_err}). Falling back to SQLite...")
         try:
             return _connect_sqlite()
