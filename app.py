@@ -33,7 +33,7 @@ st.markdown("""
 /* ── Base ── */
 html,body,[data-testid="stAppViewContainer"]{
     font-family:'Inter',sans-serif!important;
-    background:linear-gradient(135deg,#0F172A 0%,#FFFFFF 40%,#0F172A 100%)!important;
+    background:linear-gradient(135deg,#F8FAFC 0%,#FFFFFF 40%,#F8FAFC 100%)!important;
     color:#0F172A!important;
 }
 [data-testid="stAppViewContainer"]>.main{padding:0!important;}
@@ -46,7 +46,7 @@ html,body,[data-testid="stAppViewContainer"]{
 
 /* ── Sidebar ── */
 [data-testid="stSidebar"]{
-    background:linear-gradient(180deg,#0F172A 0%,#FFFFFF 100%)!important;
+    background:linear-gradient(180deg,#F8FAFC 0%,#FFFFFF 100%)!important;
     border-right:1px solid rgba(16,185,129,0.15)!important;
     min-width:240px!important;display:block!important;visibility:visible!important;opacity:1!important;
 }
@@ -334,7 +334,7 @@ if _page == "🏠 Home":
     with _hl:
         st.markdown("""
         <div style="
-            background:linear-gradient(135deg,#0F172A 0%,#0A1F14 50%,#0F1A0A 100%);
+            background:linear-gradient(135deg,#F8FAFC 0%,#F1F5F9 50%,#FFFFFF 100%);
             border:1px solid rgba(16,185,129,0.15);border-radius:20px;
             padding:2.5rem 2rem;position:relative;overflow:hidden;min-height:320px;">
             <div style="position:absolute;top:-40px;right:-40px;width:300px;height:300px;
@@ -346,7 +346,7 @@ if _page == "🏠 Home":
                 font-weight:700;letter-spacing:0.06em;text-transform:uppercase;
                 margin-bottom:1.2rem;">&#10022; Powered by Azure OpenAI + RAG</div>
             <div style="font-size:2.6rem;font-weight:900;line-height:1.1;margin:0.5rem 0;
-                background:linear-gradient(135deg,#FFFFFF 0%,#10B981 50%,#F59E0B 100%);
+                background:linear-gradient(135deg,#059669 0%,#10B981 50%,#FBB724 100%);
                 -webkit-background-clip:text;-webkit-text-fill-color:transparent;
                 background-clip:text;">AI-Powered<br>Text-to-SQL<br>Assistant</div>
             <div style="font-size:1rem;color:#64748B!important;max-width:480px;
