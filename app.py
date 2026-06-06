@@ -76,7 +76,7 @@ html,body,[data-testid="stAppViewContainer"]{
 
 /* ── Inputs ── */
 .stTextInput>div>div>input,.stTextArea>div>div>textarea{
-    background:rgba(16,185,129,0.04)!important;
+    background:#FFFFFF!important;
     border:1.5px solid rgba(16,185,129,0.15)!important;
     border-radius:12px!important;color:#0F172A!important;
     font-size:1rem!important;padding:0.75rem 1rem!important;
