@@ -33,8 +33,8 @@ st.markdown("""
 /* ── Base ── */
 html,body,[data-testid="stAppViewContainer"]{
     font-family:'Inter',sans-serif!important;
-    background:linear-gradient(135deg,#0A0A0A 0%,#0F1923 40%,#071A12 100%)!important;
-    color:#E2E8F0!important;
+    background:linear-gradient(135deg,#0F172A 0%,#1E293B 40%,#0F172A 100%)!important;
+    color:#F8FAFC!important;
 }
 [data-testid="stAppViewContainer"]>.main{padding:0!important;}
 .block-container{padding:0.5rem 2rem 2rem!important;max-width:100%!important;}
@@ -42,12 +42,12 @@ html,body,[data-testid="stAppViewContainer"]{
 /* ── Hide Streamlit header ── */
 [data-testid="stHeader"],header.stAppHeader,.stAppHeader{display:none!important;height:0!important;}
 [data-testid="stToolbar"],.stAppToolbar,.stDeployButton,[data-testid="stMainMenu"],.stMainMenu{display:none!important;}
-[data-testid="collapsedControl"]{display:flex!important;visibility:visible!important;color:#10B981!important;}
+[data-testid="collapsedControl"]{display:flex!important;visibility:visible!important;color:#6366F1!important;}
 
 /* ── Sidebar ── */
 [data-testid="stSidebar"]{
-    background:linear-gradient(180deg,#0A0A0A 0%,#0F1923 100%)!important;
-    border-right:1px solid rgba(16,185,129,0.15)!important;
+    background:linear-gradient(180deg,#0F172A 0%,#1E293B 100%)!important;
+    border-right:1px solid rgba(99,102,241,0.15)!important;
     min-width:240px!important;display:block!important;visibility:visible!important;opacity:1!important;
 }
 [data-testid="stSidebarContent"]{background:transparent!important;padding:0!important;}
@@ -59,7 +59,7 @@ html,body,[data-testid="stAppViewContainer"]{
     transition:all 0.2s!important;box-shadow:none!important;
 }
 [data-testid="stSidebar"] .stButton>button:hover{
-    background:rgba(16,185,129,0.1)!important;color:#10B981!important;transform:none!important;
+    background:rgba(99,102,241,0.1)!important;color:#6366F1!important;transform:none!important;
 }
 
 /* ── Text ── */
@@ -69,101 +69,103 @@ html,body,[data-testid="stAppViewContainer"]{
 [data-testid="stAppViewContainer"] h1,
 [data-testid="stAppViewContainer"] h2,
 [data-testid="stAppViewContainer"] h3,
-[data-testid="stAppViewContainer"] h4{color:#E2E8F0!important;}
+[data-testid="stAppViewContainer"] h4{color:#F8FAFC!important;}
 [data-testid="stAppViewContainer"] span[style]{color:unset;-webkit-text-fill-color:unset;}
 [data-testid="stAppViewContainer"] .stMarkdown p,
-[data-testid="stAppViewContainer"] .element-container p{color:#E2E8F0!important;}
+[data-testid="stAppViewContainer"] .element-container p{color:#F8FAFC!important;}
 
 /* ── Inputs ── */
 .stTextInput>div>div>input,.stTextArea>div>div>textarea{
-    background:rgba(16,185,129,0.04)!important;
-    border:1.5px solid rgba(16,185,129,0.15)!important;
-    border-radius:12px!important;color:#F1F5F9!important;
+    background:rgba(99,102,241,0.04)!important;
+    border:1.5px solid rgba(99,102,241,0.15)!important;
+    border-radius:12px!important;color:#F8FAFC!important;
     font-size:1rem!important;padding:0.75rem 1rem!important;
 }
 .stTextInput>div>div>input:focus,.stTextArea>div>div>textarea:focus{
-    border-color:#10B981!important;box-shadow:0 0 0 3px rgba(16,185,129,0.12)!important;
+    border-color:#6366F1!important;box-shadow:0 0 0 3px rgba(99,102,241,0.12)!important;
 }
 .stTextInput>div>div>input::placeholder,.stTextArea>div>div>textarea::placeholder{color:#334155!important;}
 
 /* ── Buttons ── */
 .stButton>button{
-    background:linear-gradient(135deg,#10B981,#059669)!important;
+    background:linear-gradient(135deg,#6366F1,#22D3EE)!important;
     color:#FFFFFF!important;border:none!important;border-radius:10px!important;
     font-weight:700!important;font-size:0.9rem!important;padding:0.6rem 1.4rem!important;
-    transition:all 0.2s ease!important;box-shadow:0 4px 15px rgba(16,185,129,0.25)!important;
+    transition:all 0.2s ease!important;box-shadow:0 4px 15px rgba(99,102,241,0.25)!important;
 }
 .stButton>button:hover{
-    transform:translateY(-2px)!important;box-shadow:0 8px 25px rgba(16,185,129,0.4)!important;
+    transform:translateY(-2px)!important;box-shadow:0 8px 25px rgba(99,102,241,0.4)!important;
 }
 
 /* ── Selectbox ── */
 .stSelectbox>div>div{
-    background:rgba(16,185,129,0.04)!important;
-    border:1.5px solid rgba(16,185,129,0.15)!important;
-    border-radius:10px!important;color:#F1F5F9!important;
+    background:rgba(99,102,241,0.04)!important;
+    border:1.5px solid rgba(99,102,241,0.15)!important;
+    border-radius:10px!important;color:#F8FAFC!important;
 }
 
 /* ── Tabs ── */
 .stTabs [data-baseweb="tab-list"]{
-    background:rgba(16,185,129,0.04)!important;border-radius:12px!important;
-    padding:4px!important;gap:4px!important;border:1px solid rgba(16,185,129,0.1)!important;
+    background:rgba(99,102,241,0.04)!important;border-radius:12px!important;
+    padding:4px!important;gap:4px!important;border:1px solid rgba(99,102,241,0.1)!important;
 }
-.stTabs [data-baseweb="tab"]{border-radius:8px!important;color:#64748B!important;font-weight:600!important;}
-.stTabs [aria-selected="true"]{background:rgba(16,185,129,0.15)!important;color:#10B981!important;}
+.stTabs [data-baseweb="tab"]{border-radius:8px!important;color:#94A3B8!important;font-weight:600!important;}
+.stTabs [aria-selected="true"]{background:rgba(99,102,241,0.15)!important;color:#6366F1!important;}
 
 /* ── Dataframe ── */
 [data-testid="stDataFrame"]{border-radius:12px!important;overflow:hidden!important;
-    border:1px solid rgba(16,185,129,0.1)!important;}
+    border:1px solid rgba(99,102,241,0.1)!important;}
 
 /* ── Scrollbar ── */
 ::-webkit-scrollbar{width:6px;height:6px;}
 ::-webkit-scrollbar-track{background:#060818;}
 ::-webkit-scrollbar-thumb{background:#134E3A;border-radius:3px;}
-::-webkit-scrollbar-thumb:hover{background:#10B981;}
+::-webkit-scrollbar-thumb:hover{background:#6366F1;}
 
 /* ── Cards ── */
 .glass-card{
-    background:rgba(16,185,129,0.03);
-    border:1px solid rgba(16,185,129,0.1);
+    background:rgba(30,41,59,0.6);
+    border:1px solid rgba(255,255,255,0.08);
     border-radius:16px;padding:1.5rem;
-    backdrop-filter:blur(10px);transition:all 0.3s ease;
+    backdrop-filter:blur(12px);transition:all 0.3s ease;
 }
 .glass-card:hover{
-    border-color:rgba(16,185,129,0.3);
-    box-shadow:0 8px 32px rgba(16,185,129,0.08);transform:translateY(-2px);
+    border-color:rgba(99,102,241,0.3);
+    box-shadow:0 8px 32px rgba(99,102,241,0.08);transform:translateY(-2px);
 }
 .kpi-tile{
-    background:rgba(16,185,129,0.03);border:1px solid rgba(16,185,129,0.1);
+    background:rgba(30,41,59,0.6);border:1px solid rgba(255,255,255,0.08);
     border-radius:14px;padding:1.2rem 1rem;text-align:center;transition:all 0.2s;
+    backdrop-filter:blur(12px);
 }
-.kpi-tile:hover{border-color:rgba(16,185,129,0.3);box-shadow:0 4px 20px rgba(16,185,129,0.1);}
-.kpi-tile-val{font-size:1.8rem;font-weight:800;color:#10B981!important;}
-.kpi-tile-lbl{font-size:0.72rem;color:#475569!important;text-transform:uppercase;
+.kpi-tile:hover{border-color:rgba(99,102,241,0.3);box-shadow:0 4px 20px rgba(99,102,241,0.1);}
+.kpi-tile-val{font-size:1.8rem;font-weight:800;color:#6366F1!important;}
+.kpi-tile-lbl{font-size:0.72rem;color:#64748B!important;text-transform:uppercase;
     letter-spacing:0.08em;margin-top:4px;font-weight:600;}
 .feature-card{
-    background:rgba(16,185,129,0.02);border:1px solid rgba(16,185,129,0.08);
+    background:rgba(30,41,59,0.6);border:1px solid rgba(255,255,255,0.08);
     border-radius:16px;padding:1.5rem;height:100%;transition:all 0.3s ease;
+    backdrop-filter:blur(12px);
 }
 .feature-card:hover{
-    background:rgba(16,185,129,0.05);border-color:rgba(16,185,129,0.25);
-    transform:translateY(-4px);box-shadow:0 12px 40px rgba(16,185,129,0.1);
+    background:rgba(99,102,241,0.05);border-color:rgba(99,102,241,0.25);
+    transform:translateY(-4px);box-shadow:0 12px 40px rgba(99,102,241,0.1);
 }
 .feature-icon{
-    width:48px;height:48px;background:rgba(16,185,129,0.1);
-    border:1px solid rgba(16,185,129,0.2);border-radius:12px;
+    width:48px;height:48px;background:rgba(99,102,241,0.1);
+    border:1px solid rgba(99,102,241,0.2);border-radius:12px;
     font-size:1.4rem;margin-bottom:1rem;display:flex;align-items:center;justify-content:center;
 }
-.feature-title{font-size:1rem;font-weight:700;color:#F1F5F9!important;margin-bottom:0.4rem;}
-.feature-desc{font-size:0.83rem;color:#64748B!important;line-height:1.6;}
+.feature-title{font-size:1rem;font-weight:700;color:#F8FAFC!important;margin-bottom:0.4rem;}
+.feature-desc{font-size:0.83rem;color:#94A3B8!important;line-height:1.6;}
 .history-item{
-    background:rgba(16,185,129,0.02);border:1px solid rgba(16,185,129,0.08);
+    background:rgba(30,41,59,0.4);border:1px solid rgba(255,255,255,0.08);
     border-radius:12px;padding:1rem 1.2rem;margin-bottom:0.6rem;transition:all 0.2s;
 }
-.history-item:hover{border-color:rgba(16,185,129,0.25);background:rgba(16,185,129,0.04);}
+.history-item:hover{border-color:rgba(99,102,241,0.25);background:rgba(99,102,241,0.04);}
 .toast-success{
-    background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);
-    border-radius:10px;padding:0.7rem 1rem;color:#10B981!important;
+    background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.4);
+    border-radius:10px;padding:0.7rem 1rem;color:#22D3EE!important;
     font-size:0.85rem;font-weight:600;margin-bottom:0.8rem;
 }
 .toast-error{
@@ -172,23 +174,23 @@ html,body,[data-testid="stAppViewContainer"]{
     font-size:0.85rem;font-weight:600;margin-bottom:0.8rem;
 }
 .section-label{
-    font-size:0.68rem;font-weight:700;color:#1E3A5F!important;
+    font-size:0.68rem;font-weight:700;color:#6366F1!important;
     text-transform:uppercase;letter-spacing:0.1em;padding:0 1rem;margin:1rem 0 0.4rem;
 }
-.status-dot-green{display:inline-block;width:8px;height:8px;background:#10B981;border-radius:50%;margin-right:6px;}
+.status-dot-green{display:inline-block;width:8px;height:8px;background:#6366F1;border-radius:50%;margin-right:6px;}
 .status-dot-red{display:inline-block;width:8px;height:8px;background:#EF4444;border-radius:50%;margin-right:6px;}
 @keyframes float{0%,100%{transform:translateY(0px);}50%{transform:translateY(-12px);}}
 @keyframes pulse-dot{0%,100%{opacity:1;}50%{opacity:0.4;}}
-@keyframes glow{0%,100%{box-shadow:0 0 10px rgba(16,185,129,0.3);}50%{box-shadow:0 0 25px rgba(16,185,129,0.6);}}
-hr{border-color:rgba(16,185,129,0.08)!important;}
+@keyframes glow{0%,100%{box-shadow:0 0 10px rgba(99,102,241,0.3);}50%{box-shadow:0 0 25px rgba(99,102,241,0.6);}}
+hr{border-color:rgba(99,102,241,0.08)!important;}
 
 /* ── Dashboard Enhanced Styles ── */
 .upload-zone{
-    background:rgba(16,185,129,0.03);border:2px dashed rgba(16,185,129,0.2);
+    background:rgba(30,41,59,0.4);border:2px dashed rgba(99,102,241,0.4);
     border-radius:16px;padding:2rem;text-align:center;transition:all 0.3s;
     cursor:pointer;
 }
-.upload-zone:hover{border-color:rgba(16,185,129,0.5);background:rgba(16,185,129,0.06);}
+.upload-zone:hover{border-color:rgba(99,102,241,0.5);background:rgba(99,102,241,0.06);}
 .action-toolbar{
     display:flex;gap:0.4rem;flex-wrap:wrap;margin:0.5rem 0;
 }
@@ -198,27 +200,27 @@ hr{border-color:rgba(16,185,129,0.08)!important;}
     border-radius:8px;padding:0.35rem 0.7rem;font-size:0.72rem;
     color:#94A3B8;font-weight:600;cursor:pointer;transition:all 0.2s;
 }
-.action-btn:hover{background:rgba(16,185,129,0.1);color:#10B981;border-color:rgba(16,185,129,0.3);}
+.action-btn:hover{background:rgba(99,102,241,0.1);color:#6366F1;border-color:rgba(99,102,241,0.3);}
 .rec-badge{
     display:inline-flex;align-items:center;gap:5px;
-    background:linear-gradient(135deg,rgba(139,92,246,0.1),rgba(16,185,129,0.08));
+    background:linear-gradient(135deg,rgba(139,92,246,0.1),rgba(99,102,241,0.08));
     border:1px solid rgba(139,92,246,0.25);
     border-radius:20px;padding:0.3rem 0.8rem;font-size:0.72rem;
     color:#A78BFA;font-weight:600;margin:0.2rem;transition:all 0.2s;
 }
-.rec-badge:hover{background:linear-gradient(135deg,rgba(139,92,246,0.2),rgba(16,185,129,0.15));transform:scale(1.02);}
+.rec-badge:hover{background:linear-gradient(135deg,rgba(139,92,246,0.2),rgba(99,102,241,0.15));transform:scale(1.02);}
 .col-drill{
     background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);
     border-radius:10px;padding:0.8rem;margin-bottom:0.4rem;transition:all 0.2s;
 }
-.col-drill:hover{border-color:rgba(16,185,129,0.2);background:rgba(16,185,129,0.03);}
+.col-drill:hover{border-color:rgba(99,102,241,0.2);background:rgba(99,102,241,0.03);}
 .sparkline-box{
     background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);
     border-radius:8px;padding:0.4rem;margin-top:0.3rem;
 }
 @keyframes shimmer{0%{background-position:-200% 0;}100%{background-position:200% 0;}}
 .loading-shimmer{
-    background:linear-gradient(90deg,rgba(16,185,129,0.05) 25%,rgba(16,185,129,0.12) 50%,rgba(16,185,129,0.05) 75%);
+    background:linear-gradient(90deg,rgba(99,102,241,0.05) 25%,rgba(99,102,241,0.12) 50%,rgba(99,102,241,0.05) 75%);
     background-size:200% 100%;animation:shimmer 1.5s ease-in-out infinite;
     border-radius:8px;height:20px;
 }
@@ -257,12 +259,12 @@ with st.sidebar:
     <div style="padding:1.5rem 1rem 1rem;border-bottom:1px solid rgba(255,255,255,0.06);margin-bottom:0.5rem;">
         <div style="display:flex;align-items:center;gap:10px;">
             <div style="width:38px;height:38px;
-                background:linear-gradient(135deg,#10B981,#059669);
+                background:linear-gradient(135deg,#6366F1,#4F46E5);
                 border-radius:10px;display:flex;align-items:center;
                 justify-content:center;font-size:1.2rem;flex-shrink:0;">🤖</div>
             <div>
-                <div style="font-size:1rem;font-weight:800;color:#F1F5F9!important;">AaiTech</div>
-                <div style="font-size:0.7rem;color:#475569!important;">AI SQL Assistant</div>
+                <div style="font-size:1rem;font-weight:800;color:#F8FAFC!important;">AaiTech</div>
+                <div style="font-size:0.7rem;color:#64748B!important;">AI SQL Assistant</div>
             </div>
         </div>
     </div>
@@ -277,7 +279,7 @@ with st.sidebar:
     st.markdown(f"""
     <div style="padding:0.4rem 1rem 0.6rem;">
         <span class="{_dot}"></span>
-        <span style="font-size:0.76rem;color:#64748B!important;">{_stxt}</span>
+        <span style="font-size:0.76rem;color:#94A3B8!important;">{_stxt}</span>
     </div>""", unsafe_allow_html=True)
     if not _db_ok:
         st.markdown(f'<div style="padding:0 1rem 0.6rem;font-size:0.72rem;color:#EF4444!important;">Database is offline.</div>', unsafe_allow_html=True)
@@ -332,47 +334,47 @@ if _page == "🏠 Home":
     with _hl:
         st.markdown("""
         <div style="
-            background:linear-gradient(135deg,#071A12 0%,#0A1F14 50%,#0F1A0A 100%);
-            border:1px solid rgba(16,185,129,0.15);border-radius:20px;
+            background:linear-gradient(135deg,#0F172A 0%,#0A1F14 50%,#0F1A0A 100%);
+            border:1px solid rgba(99,102,241,0.15);border-radius:20px;
             padding:2.5rem 2rem;position:relative;overflow:hidden;min-height:320px;">
             <div style="position:absolute;top:-40px;right:-40px;width:300px;height:300px;
-                background:radial-gradient(circle,rgba(251,183,36,0.07) 0%,transparent 70%);
+                background:radial-gradient(circle,rgba(34,211,238,0.07) 0%,transparent 70%);
                 pointer-events:none;"></div>
-            <div style="display:inline-block;background:rgba(251,183,36,0.1);
-                border:1px solid rgba(251,183,36,0.25);color:#FBB724!important;
+            <div style="display:inline-block;background:rgba(34,211,238,0.1);
+                border:1px solid rgba(34,211,238,0.25);color:#22D3EE!important;
                 padding:0.3rem 0.9rem;border-radius:20px;font-size:0.75rem;
                 font-weight:700;letter-spacing:0.06em;text-transform:uppercase;
                 margin-bottom:1.2rem;">&#10022; Powered by Azure OpenAI + RAG</div>
             <div style="font-size:2.6rem;font-weight:900;line-height:1.1;margin:0.5rem 0;
-                background:linear-gradient(135deg,#FFFFFF 0%,#10B981 50%,#F59E0B 100%);
+                background:linear-gradient(135deg,#FFFFFF 0%,#6366F1 50%,#F59E0B 100%);
                 -webkit-background-clip:text;-webkit-text-fill-color:transparent;
                 background-clip:text;">AI-Powered<br>Text-to-SQL<br>Assistant</div>
-            <div style="font-size:1rem;color:#64748B!important;max-width:480px;
+            <div style="font-size:1rem;color:#94A3B8!important;max-width:480px;
                 line-height:1.7;margin:1rem 0 1.5rem;">
                 Transform plain English into precise SQL queries instantly.
                 No SQL expertise needed — just ask your business question.
             </div>
             <div style="display:flex;gap:0.7rem;flex-wrap:wrap;">
-                <span style="background:rgba(251,183,36,0.1);border:1px solid rgba(251,183,36,0.3);
+                <span style="background:rgba(34,211,238,0.1);border:1px solid rgba(34,211,238,0.3);
                     border-radius:8px;padding:0.35rem 0.8rem;font-size:0.75rem;
-                    color:#FBB724!important;font-weight:600;">&#9889; GPT-4 Powered</span>
-                <span style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);
+                    color:#22D3EE!important;font-weight:600;">&#9889; GPT-4 Powered</span>
+                <span style="background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.3);
                     border-radius:8px;padding:0.35rem 0.8rem;font-size:0.75rem;
-                    color:#10B981!important;font-weight:600;">&#128994; Live Database</span>
+                    color:#6366F1!important;font-weight:600;">&#128994; Live Database</span>
                 <span style="background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.3);
                     border-radius:8px;padding:0.35rem 0.8rem;font-size:0.75rem;
                     color:#8B5CF6!important;font-weight:600;">&#128269; Schema-Aware RAG</span>
             </div>
             <div style="display:flex;gap:2rem;margin-top:2rem;padding-top:1.5rem;
                 border-top:1px solid rgba(255,255,255,0.06);">
-                <div><div style="font-size:1.6rem;font-weight:800;color:#FBB724!important;">5</div>
-                    <div style="font-size:0.75rem;color:#475569!important;">Tables</div></div>
-                <div><div style="font-size:1.6rem;font-weight:800;color:#FBB724!important;">&#8734;</div>
-                    <div style="font-size:0.75rem;color:#475569!important;">Queries</div></div>
-                <div><div style="font-size:1.6rem;font-weight:800;color:#FBB724!important;">AI</div>
-                    <div style="font-size:0.75rem;color:#475569!important;">GPT-4</div></div>
-                <div><div style="font-size:1.6rem;font-weight:800;color:#FBB724!important;">RAG</div>
-                    <div style="font-size:0.75rem;color:#475569!important;">Context</div></div>
+                <div><div style="font-size:1.6rem;font-weight:800;color:#22D3EE!important;">5</div>
+                    <div style="font-size:0.75rem;color:#64748B!important;">Tables</div></div>
+                <div><div style="font-size:1.6rem;font-weight:800;color:#22D3EE!important;">&#8734;</div>
+                    <div style="font-size:0.75rem;color:#64748B!important;">Queries</div></div>
+                <div><div style="font-size:1.6rem;font-weight:800;color:#22D3EE!important;">AI</div>
+                    <div style="font-size:0.75rem;color:#64748B!important;">GPT-4</div></div>
+                <div><div style="font-size:1.6rem;font-weight:800;color:#22D3EE!important;">RAG</div>
+                    <div style="font-size:0.75rem;color:#64748B!important;">Context</div></div>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -381,67 +383,67 @@ if _page == "🏠 Home":
         st.markdown("""
         <div style="
             background:radial-gradient(ellipse at center,
-                rgba(16,185,129,0.08) 0%,rgba(245,158,11,0.05) 60%,transparent 80%);
-            border:1px solid rgba(16,185,129,0.2);border-radius:24px;
+                rgba(99,102,241,0.08) 0%,rgba(245,158,11,0.05) 60%,transparent 80%);
+            border:1px solid rgba(99,102,241,0.2);border-radius:24px;
             padding:2rem 1rem 1.5rem;text-align:center;position:relative;
             overflow:hidden;min-height:320px;display:flex;flex-direction:column;
             align-items:center;justify-content:center;">
             <div style="position:absolute;top:50%;left:50%;width:260px;height:260px;
-                border-radius:50%;border:1px solid rgba(251,183,36,0.07);
+                border-radius:50%;border:1px solid rgba(34,211,238,0.07);
                 transform:translate(-50%,-50%);pointer-events:none;"></div>
             <div style="animation:float 3s ease-in-out infinite;position:relative;z-index:2;">
                 <svg viewBox="0 0 120 140" xmlns="http://www.w3.org/2000/svg"
-                     style="width:150px;filter:drop-shadow(0 0 18px rgba(16,185,129,0.7));">
-                    <line x1="60" y1="8" x2="60" y2="22" stroke="#FBB724" stroke-width="2.5" stroke-linecap="round"/>
-                    <circle cx="60" cy="6" r="4" fill="#FBB724"/>
-                    <circle cx="60" cy="6" r="7" fill="none" stroke="rgba(251,183,36,0.3)" stroke-width="1.5"/>
-                    <rect x="28" y="22" width="64" height="50" rx="14" fill="#1A1A2E" stroke="#FBB724" stroke-width="1.5"/>
-                    <ellipse cx="45" cy="42" rx="9" ry="9" fill="rgba(251,183,36,0.15)"/>
-                    <ellipse cx="75" cy="42" rx="9" ry="9" fill="rgba(251,183,36,0.15)"/>
-                    <circle cx="45" cy="42" r="6" fill="#FBB724"/>
-                    <circle cx="75" cy="42" r="6" fill="#FBB724"/>
+                     style="width:150px;filter:drop-shadow(0 0 18px rgba(99,102,241,0.7));">
+                    <line x1="60" y1="8" x2="60" y2="22" stroke="#22D3EE" stroke-width="2.5" stroke-linecap="round"/>
+                    <circle cx="60" cy="6" r="4" fill="#22D3EE"/>
+                    <circle cx="60" cy="6" r="7" fill="none" stroke="rgba(34,211,238,0.3)" stroke-width="1.5"/>
+                    <rect x="28" y="22" width="64" height="50" rx="14" fill="#1A1A2E" stroke="#22D3EE" stroke-width="1.5"/>
+                    <ellipse cx="45" cy="42" rx="9" ry="9" fill="rgba(34,211,238,0.15)"/>
+                    <ellipse cx="75" cy="42" rx="9" ry="9" fill="rgba(34,211,238,0.15)"/>
+                    <circle cx="45" cy="42" r="6" fill="#22D3EE"/>
+                    <circle cx="75" cy="42" r="6" fill="#22D3EE"/>
                     <circle cx="47" cy="40" r="2" fill="#0A0A0F"/>
                     <circle cx="77" cy="40" r="2" fill="#0A0A0F"/>
                     <circle cx="48" cy="39" r="1" fill="white" opacity="0.8"/>
                     <circle cx="78" cy="39" r="1" fill="white" opacity="0.8"/>
-                    <rect x="40" y="58" width="40" height="7" rx="3.5" fill="rgba(251,183,36,0.15)" stroke="rgba(251,183,36,0.4)" stroke-width="1"/>
-                    <rect x="43" y="60" width="6" height="3" rx="1.5" fill="#FBB724"/>
-                    <rect x="52" y="60" width="6" height="3" rx="1.5" fill="#FBB724"/>
-                    <rect x="61" y="60" width="6" height="3" rx="1.5" fill="#FBB724"/>
-                    <rect x="70" y="60" width="6" height="3" rx="1.5" fill="#FBB724"/>
-                    <rect x="52" y="72" width="16" height="10" rx="4" fill="#1A1A2E" stroke="rgba(251,183,36,0.3)" stroke-width="1"/>
-                    <rect x="22" y="82" width="76" height="52" rx="14" fill="#1A1A2E" stroke="#FBB724" stroke-width="1.5"/>
-                    <rect x="34" y="92" width="52" height="32" rx="8" fill="rgba(251,183,36,0.06)" stroke="rgba(251,183,36,0.2)" stroke-width="1"/>
-                    <circle cx="48" cy="102" r="5" fill="rgba(251,183,36,0.2)" stroke="#FBB724" stroke-width="1"/>
-                    <circle cx="48" cy="102" r="3" fill="#FBB724"/>
-                    <circle cx="60" cy="102" r="5" fill="rgba(16,185,129,0.2)" stroke="#10B981" stroke-width="1"/>
-                    <circle cx="60" cy="102" r="3" fill="#10B981"/>
+                    <rect x="40" y="58" width="40" height="7" rx="3.5" fill="rgba(34,211,238,0.15)" stroke="rgba(34,211,238,0.4)" stroke-width="1"/>
+                    <rect x="43" y="60" width="6" height="3" rx="1.5" fill="#22D3EE"/>
+                    <rect x="52" y="60" width="6" height="3" rx="1.5" fill="#22D3EE"/>
+                    <rect x="61" y="60" width="6" height="3" rx="1.5" fill="#22D3EE"/>
+                    <rect x="70" y="60" width="6" height="3" rx="1.5" fill="#22D3EE"/>
+                    <rect x="52" y="72" width="16" height="10" rx="4" fill="#1A1A2E" stroke="rgba(34,211,238,0.3)" stroke-width="1"/>
+                    <rect x="22" y="82" width="76" height="52" rx="14" fill="#1A1A2E" stroke="#22D3EE" stroke-width="1.5"/>
+                    <rect x="34" y="92" width="52" height="32" rx="8" fill="rgba(34,211,238,0.06)" stroke="rgba(34,211,238,0.2)" stroke-width="1"/>
+                    <circle cx="48" cy="102" r="5" fill="rgba(34,211,238,0.2)" stroke="#22D3EE" stroke-width="1"/>
+                    <circle cx="48" cy="102" r="3" fill="#22D3EE"/>
+                    <circle cx="60" cy="102" r="5" fill="rgba(99,102,241,0.2)" stroke="#6366F1" stroke-width="1"/>
+                    <circle cx="60" cy="102" r="3" fill="#6366F1"/>
                     <circle cx="72" cy="102" r="5" fill="rgba(139,92,246,0.2)" stroke="#8B5CF6" stroke-width="1"/>
                     <circle cx="72" cy="102" r="3" fill="#8B5CF6"/>
-                    <rect x="42" y="114" width="4" height="6" rx="1" fill="rgba(251,183,36,0.4)"/>
-                    <rect x="49" y="111" width="4" height="9" rx="1" fill="rgba(251,183,36,0.6)"/>
-                    <rect x="56" y="108" width="4" height="12" rx="1" fill="#FBB724"/>
-                    <rect x="63" y="111" width="4" height="9" rx="1" fill="rgba(251,183,36,0.6)"/>
-                    <rect x="70" y="114" width="4" height="6" rx="1" fill="rgba(251,183,36,0.4)"/>
-                    <rect x="4" y="84" width="18" height="36" rx="9" fill="#1A1A2E" stroke="rgba(251,183,36,0.4)" stroke-width="1.5"/>
-                    <rect x="98" y="84" width="18" height="36" rx="9" fill="#1A1A2E" stroke="rgba(251,183,36,0.4)" stroke-width="1.5"/>
-                    <circle cx="13" cy="84" r="5" fill="#FBB724" opacity="0.6"/>
-                    <circle cx="107" cy="84" r="5" fill="#FBB724" opacity="0.6"/>
-                    <circle cx="15" cy="55" r="2.5" fill="#FBB724" opacity="0.5"/>
-                    <circle cx="105" cy="50" r="2" fill="#10B981" opacity="0.6"/>
+                    <rect x="42" y="114" width="4" height="6" rx="1" fill="rgba(34,211,238,0.4)"/>
+                    <rect x="49" y="111" width="4" height="9" rx="1" fill="rgba(34,211,238,0.6)"/>
+                    <rect x="56" y="108" width="4" height="12" rx="1" fill="#22D3EE"/>
+                    <rect x="63" y="111" width="4" height="9" rx="1" fill="rgba(34,211,238,0.6)"/>
+                    <rect x="70" y="114" width="4" height="6" rx="1" fill="rgba(34,211,238,0.4)"/>
+                    <rect x="4" y="84" width="18" height="36" rx="9" fill="#1A1A2E" stroke="rgba(34,211,238,0.4)" stroke-width="1.5"/>
+                    <rect x="98" y="84" width="18" height="36" rx="9" fill="#1A1A2E" stroke="rgba(34,211,238,0.4)" stroke-width="1.5"/>
+                    <circle cx="13" cy="84" r="5" fill="#22D3EE" opacity="0.6"/>
+                    <circle cx="107" cy="84" r="5" fill="#22D3EE" opacity="0.6"/>
+                    <circle cx="15" cy="55" r="2.5" fill="#22D3EE" opacity="0.5"/>
+                    <circle cx="105" cy="50" r="2" fill="#6366F1" opacity="0.6"/>
                     <circle cx="108" cy="65" r="1.5" fill="#8B5CF6" opacity="0.5"/>
-                    <circle cx="12" cy="70" r="1.5" fill="#FBB724" opacity="0.4"/>
+                    <circle cx="12" cy="70" r="1.5" fill="#22D3EE" opacity="0.4"/>
                 </svg>
             </div>
             <div style="margin-top:0.8rem;z-index:2;position:relative;">
-                <div style="font-size:0.8rem;font-weight:700;color:#FBB724!important;letter-spacing:0.06em;">AI AGENT</div>
-                <div style="font-size:0.68rem;color:#475569!important;margin-top:2px;">Powered by GPT-4</div>
+                <div style="font-size:0.8rem;font-weight:700;color:#22D3EE!important;letter-spacing:0.06em;">AI AGENT</div>
+                <div style="font-size:0.68rem;color:#64748B!important;margin-top:2px;">Powered by GPT-4</div>
             </div>
             <div style="display:flex;align-items:center;justify-content:center;
                 gap:6px;margin-top:0.6rem;z-index:2;position:relative;">
-                <div style="width:7px;height:7px;background:#10B981;border-radius:50%;
-                    box-shadow:0 0 7px #10B981;animation:pulse-dot 2s ease-in-out infinite;"></div>
-                <span style="font-size:0.7rem;color:#10B981!important;font-weight:700;letter-spacing:0.06em;">ONLINE</span>
+                <div style="width:7px;height:7px;background:#6366F1;border-radius:50%;
+                    box-shadow:0 0 7px #6366F1;animation:pulse-dot 2s ease-in-out infinite;"></div>
+                <span style="font-size:0.7rem;color:#6366F1!important;font-weight:700;letter-spacing:0.06em;">ONLINE</span>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -469,10 +471,10 @@ if _page == "🏠 Home":
     <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);
         border-radius:16px;padding:1.5rem;margin-bottom:1rem;">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:0.8rem;">
-            <div style="width:8px;height:8px;background:#FBB724;border-radius:50%;
-                box-shadow:0 0 6px #FBB724;"></div>
-            <span style="font-size:0.9rem;font-weight:700;color:#F1F5F9!important;">&#9889; Ask the AI</span>
-            <span style="font-size:0.72rem;color:#475569!important;margin-left:4px;">Type in plain English — no SQL needed</span>
+            <div style="width:8px;height:8px;background:#22D3EE;border-radius:50%;
+                box-shadow:0 0 6px #22D3EE;"></div>
+            <span style="font-size:0.9rem;font-weight:700;color:#F8FAFC!important;">&#9889; Ask the AI</span>
+            <span style="font-size:0.72rem;color:#64748B!important;margin-left:4px;">Type in plain English — no SQL needed</span>
         </div>
     """, unsafe_allow_html=True)
 
@@ -536,9 +538,9 @@ if _page == "🏠 Home":
                 st.markdown('<div class="toast-success">&#10003; Query executed successfully</div>', unsafe_allow_html=True)
                 _rc,_sc = st.columns([3,2])
                 with _rc:
-                    st.markdown('<div style="font-size:0.78rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.4rem;">&#128202; Results</div>', unsafe_allow_html=True)
+                    st.markdown('<div style="font-size:0.78rem;font-weight:700;color:#22D3EE;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.4rem;">&#128202; Results</div>', unsafe_allow_html=True)
                     if _df is not None and not _df.empty:
-                        st.markdown(f"<span style='color:#10B981;font-size:0.8rem;font-weight:600;'>&#10003; {len(_df)} row(s) &middot; {len(_df.columns)} col(s)</span>", unsafe_allow_html=True)
+                        st.markdown(f"<span style='color:#6366F1;font-size:0.8rem;font-weight:600;'>&#10003; {len(_df)} row(s) &middot; {len(_df.columns)} col(s)</span>", unsafe_allow_html=True)
                         st.dataframe(_df, use_container_width=True, hide_index=True)
                         _d1,_d2 = st.columns(2)
                         with _d1:
@@ -548,27 +550,27 @@ if _page == "🏠 Home":
                     else:
                         st.info("No results found.")
                 with _sc:
-                    st.markdown('<div style="font-size:0.78rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.4rem;">&#128295; Generated SQL</div>', unsafe_allow_html=True)
+                    st.markdown('<div style="font-size:0.78rem;font-weight:700;color:#22D3EE;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.4rem;">&#128295; Generated SQL</div>', unsafe_allow_html=True)
                     st.code(_sql, language="sql")
                     if _df is not None and not _df.empty:
                         _num = _df.select_dtypes(include='number').columns.tolist()
                         _cat = _df.select_dtypes(exclude='number').columns.tolist()
                         if _num and _cat:
                             import plotly.express as px
-                            st.markdown('<div style="font-size:0.78rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.08em;margin:0.6rem 0 0.3rem;">&#128200; Auto Chart</div>', unsafe_allow_html=True)
-                            _fig = px.bar(_df.head(10), x=_cat[0], y=_num[0], color_discrete_sequence=["#FBB724"])
+                            st.markdown('<div style="font-size:0.78rem;font-weight:700;color:#22D3EE;text-transform:uppercase;letter-spacing:0.08em;margin:0.6rem 0 0.3rem;">&#128200; Auto Chart</div>', unsafe_allow_html=True)
+                            _fig = px.bar(_df.head(10), x=_cat[0], y=_num[0], color_discrete_sequence=["#22D3EE"])
                             _fig.update_layout(paper_bgcolor="rgba(0,0,0,0)",plot_bgcolor="rgba(0,0,0,0)",
                                 font=dict(color="#94A3B8",size=10),height=220,margin=dict(t=5,b=5,l=5,r=5),
-                                xaxis=dict(showgrid=False,color="#475569"),
-                                yaxis=dict(showgrid=True,gridcolor="rgba(255,255,255,0.05)",color="#475569"))
+                                xaxis=dict(showgrid=False,color="#64748B"),
+                                yaxis=dict(showgrid=True,gridcolor="rgba(255,255,255,0.05)",color="#64748B"))
                             st.plotly_chart(_fig, use_container_width=True)
         st.session_state.submit = False
 
     # ── Feature Cards ─────────────────────────────────────────────────────────
     st.markdown("""
     <div style="display:flex;align-items:center;gap:10px;margin:2rem 0 1rem;">
-        <span style="font-size:1.1rem;font-weight:700;color:#F1F5F9!important;">Everything you need</span>
-        <span style="background:rgba(251,183,36,0.1);color:#FBB724!important;font-size:0.7rem;
+        <span style="font-size:1.1rem;font-weight:700;color:#F8FAFC!important;">Everything you need</span>
+        <span style="background:rgba(34,211,238,0.1);color:#22D3EE!important;font-size:0.7rem;
             font-weight:700;padding:0.15rem 0.6rem;border-radius:20px;text-transform:uppercase;">Features</span>
     </div>""", unsafe_allow_html=True)
     _feats = [
@@ -606,8 +608,8 @@ elif _page == "💬 Query":
     # AI Suggestions
     st.markdown("""
     <div class="glass-card" style="margin-bottom:1rem;">
-        <div style="font-size:0.78rem;font-weight:700;color:#FBB724!important;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.6rem;">&#129504; AI Suggestions</div>
-        <div style="font-size:0.82rem;color:#64748B!important;margin-bottom:0.5rem;">Based on your schema, try these:</div>
+        <div style="font-size:0.78rem;font-weight:700;color:#22D3EE!important;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.6rem;">&#129504; AI Suggestions</div>
+        <div style="font-size:0.82rem;color:#94A3B8!important;margin-bottom:0.5rem;">Based on your schema, try these:</div>
         <span style="display:inline-block;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:#94A3B8!important;font-size:0.78rem;padding:0.3rem 0.8rem;border-radius:20px;margin:0.2rem;">Show all customers</span>
         <span style="display:inline-block;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:#94A3B8!important;font-size:0.78rem;padding:0.3rem 0.8rem;border-radius:20px;margin:0.2rem;">Revenue by category</span>
         <span style="display:inline-block;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:#94A3B8!important;font-size:0.78rem;padding:0.3rem 0.8rem;border-radius:20px;margin:0.2rem;">Top 5 expensive products</span>
@@ -643,7 +645,7 @@ elif _page == "💬 Query":
                 "date":datetime.now().strftime("%b %d")
             })
             st.markdown('<div class="toast-success">&#10003; Query executed successfully</div>', unsafe_allow_html=True)
-            st.markdown('<div style="font-size:0.78rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.4rem;">&#128295; Generated SQL</div>', unsafe_allow_html=True)
+            st.markdown('<div style="font-size:0.78rem;font-weight:700;color:#22D3EE;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.4rem;">&#128295; Generated SQL</div>', unsafe_allow_html=True)
             st.code(_sql, language="sql")
             if _df is not None:
                 _qm1,_qm2,_qm3,_qm4 = st.columns(4)
@@ -667,12 +669,12 @@ elif _page == "💬 Query":
                 _cat = _df.select_dtypes(exclude='number').columns.tolist()
                 if _num and _cat:
                     import plotly.express as px
-                    st.markdown('<div style="font-size:0.78rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.08em;margin:1rem 0 0.4rem;">&#128200; Auto Visualization</div>', unsafe_allow_html=True)
-                    _fig = px.bar(_df.head(20), x=_cat[0], y=_num[0], color_discrete_sequence=["#FBB724"])
+                    st.markdown('<div style="font-size:0.78rem;font-weight:700;color:#22D3EE;text-transform:uppercase;letter-spacing:0.08em;margin:1rem 0 0.4rem;">&#128200; Auto Visualization</div>', unsafe_allow_html=True)
+                    _fig = px.bar(_df.head(20), x=_cat[0], y=_num[0], color_discrete_sequence=["#22D3EE"])
                     _fig.update_layout(paper_bgcolor="rgba(0,0,0,0)",plot_bgcolor="rgba(0,0,0,0)",
                         font=dict(color="#94A3B8",size=11),height=320,margin=dict(t=10,b=10,l=10,r=10),
-                        xaxis=dict(showgrid=False,color="#475569"),
-                        yaxis=dict(showgrid=True,gridcolor="rgba(255,255,255,0.05)",color="#475569"))
+                        xaxis=dict(showgrid=False,color="#64748B"),
+                        yaxis=dict(showgrid=True,gridcolor="rgba(255,255,255,0.05)",color="#64748B"))
                     st.plotly_chart(_fig, use_container_width=True)
             else:
                 st.info("No results found.")
@@ -687,7 +689,7 @@ elif _page == "📊 Dashboard":
     from plotly.subplots import make_subplots
 
     # ── Color palette ─────────────────────────────────────────────────────────
-    C1="#10B981"; C2="#F59E0B"; C3="#8B5CF6"; C4="#EF4444"; C5="#0EA5E9"
+    C1="#6366F1"; C2="#F59E0B"; C3="#8B5CF6"; C4="#EF4444"; C5="#0EA5E9"
     PAL=[C1,C2,C3,C4,C5,"#06B6D4","#EC4899"]
     BG="rgba(0,0,0,0)"; GRID="rgba(255,255,255,0.05)"
     FONT=dict(family="Inter,sans-serif",size=11,color="#94A3B8")
@@ -764,24 +766,24 @@ elif _page == "📊 Dashboard":
     # ── Overhauled Dashboard Page Header ──────────────────────────────────────
     st.markdown("""
     <div style="background:linear-gradient(135deg,#0D0D14 0%,#1A1A2E 60%,#16213E 100%);
-        border:1px solid rgba(16,185,129,0.2);border-radius:16px;
+        border:1px solid rgba(99,102,241,0.2);border-radius:16px;
         padding:1.5rem 2rem;margin-bottom:1.2rem;position:relative;overflow:hidden;">
         <div style="position:absolute;top:-60px;right:-60px;width:300px;height:300px;
-            background:radial-gradient(circle,rgba(16,185,129,0.06) 0%,transparent 70%);
+            background:radial-gradient(circle,rgba(99,102,241,0.06) 0%,transparent 70%);
             pointer-events:none;"></div>
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
             <div>
-                <div style="font-size:0.72rem;font-weight:700;color:#10B981;
+                <div style="font-size:0.72rem;font-weight:700;color:#6366F1;
                     text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.4rem;">
                     &#10022; AaiTech Industries &nbsp;&middot;&nbsp; Advanced Analytics
                 </div>
                 <span style="font-size:1.7rem;font-weight:900;
-                    background:linear-gradient(90deg,#FFFFFF 0%,#10B981 60%,#F59E0B 100%);
+                    background:linear-gradient(90deg,#FFFFFF 0%,#6366F1 60%,#F59E0B 100%);
                     -webkit-background-clip:text;-webkit-text-fill-color:transparent;
                     background-clip:text;display:block;line-height:1.2;">
                     Strategic Business Dashboard &amp; Analytics Hub
                 </span>
-                <span style="font-size:0.85rem;color:#64748B;display:block;margin-top:0.3rem;">
+                <span style="font-size:0.85rem;color:#94A3B8;display:block;margin-top:0.3rem;">
                     Analyze live database records or upload and merge your custom CSV/Excel datasets.
                 </span>
             </div>
@@ -865,37 +867,37 @@ elif _page == "📊 Dashboard":
                         border-top:3px solid {_clr};border-radius:12px;padding:1rem 0.8rem;
                         transition:all 0.2s;">
                         <div style="font-size:1.3rem;margin-bottom:0.3rem;">{_ico}</div>
-                        <div style="font-size:0.68rem;font-weight:700;color:#64748B;
+                        <div style="font-size:0.68rem;font-weight:700;color:#94A3B8;
                             text-transform:uppercase;letter-spacing:0.08em;">{_lbl}</div>
                         <div style="font-size:1.6rem;font-weight:800;color:{_clr};
                             line-height:1.1;margin:0.2rem 0;">{_val}</div>
-                        <div style="font-size:0.68rem;color:#475569;">{_sub}</div>
+                        <div style="font-size:0.68rem;color:#64748B;">{_sub}</div>
                     </div>""", unsafe_allow_html=True)
 
             st.markdown("<br>", unsafe_allow_html=True)
 
             # ── Insight Banner ────────────────────────────────────────────────────
             st.markdown(f"""
-            <div style="background:linear-gradient(90deg,rgba(16,185,129,0.08),rgba(245,158,11,0.05));
-                border:1px solid rgba(16,185,129,0.2);border-radius:10px;
+            <div style="background:linear-gradient(90deg,rgba(99,102,241,0.08),rgba(245,158,11,0.05));
+                border:1px solid rgba(99,102,241,0.2);border-radius:10px;
                 padding:0.7rem 1.2rem;margin-bottom:1rem;font-size:0.82rem;">
-                <span style="color:#10B981;font-weight:700;">&#10022; Key Insights &nbsp;</span>
+                <span style="color:#6366F1;font-weight:700;">&#10022; Key Insights &nbsp;</span>
                 <span style="color:#94A3B8;">
                     Top market: <b style="color:#FFFFFF;">{_top_country}</b> &nbsp;&middot;&nbsp;
                     Best category: <b style="color:#FFFFFF;">{_top_cat}</b>
-                    <span style="color:#10B981;">(${_top_cat_v:,.0f})</span> &nbsp;&middot;&nbsp;
+                    <span style="color:#6366F1;">(${_top_cat_v:,.0f})</span> &nbsp;&middot;&nbsp;
                     Top product: <b style="color:#FFFFFF;">{_top_prod}</b>
                 </span>
             </div>""", unsafe_allow_html=True)
 
             # ── Row 2: Revenue Donut + Orders Bar ─────────────────────────────────
-            st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #10B981;padding-left:0.6rem;">&#128202; Sales Performance</p>', unsafe_allow_html=True)
+            st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#22D3EE;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #6366F1;padding-left:0.6rem;">&#128202; Sales Performance</p>', unsafe_allow_html=True)
             _r1,_r2 = st.columns(2)
 
             with _r1:
                 st.markdown('<div class="glass-card" style="padding:1rem;">', unsafe_allow_html=True)
-                st.markdown('<span style="font-size:0.82rem;font-weight:700;color:#F1F5F9;">Revenue by Category</span>', unsafe_allow_html=True)
-                st.markdown('<span style="font-size:0.72rem;color:#475569;display:block;margin-bottom:0.4rem;">Proportional revenue contribution</span>', unsafe_allow_html=True)
+                st.markdown('<span style="font-size:0.82rem;font-weight:700;color:#F8FAFC;">Revenue by Category</span>', unsafe_allow_html=True)
+                st.markdown('<span style="font-size:0.72rem;color:#64748B;display:block;margin-bottom:0.4rem;">Proportional revenue contribution</span>', unsafe_allow_html=True)
                 _cr=_fr.groupby("category")["line_total"].sum().reset_index()
                 _cr.columns=["Category","Revenue"]
                 if not _cr.empty:
@@ -911,20 +913,20 @@ elif _page == "📊 Dashboard":
 
             with _r2:
                 st.markdown('<div class="glass-card" style="padding:1rem;">', unsafe_allow_html=True)
-                st.markdown('<span style="font-size:0.82rem;font-weight:700;color:#F1F5F9;">Orders by Country</span>', unsafe_allow_html=True)
-                st.markdown('<span style="font-size:0.72rem;color:#475569;display:block;margin-bottom:0.4rem;">Order volume per destination market</span>', unsafe_allow_html=True)
+                st.markdown('<span style="font-size:0.82rem;font-weight:700;color:#F8FAFC;">Orders by Country</span>', unsafe_allow_html=True)
+                st.markdown('<span style="font-size:0.72rem;color:#64748B;display:block;margin-bottom:0.4rem;">Order volume per destination market</span>', unsafe_allow_html=True)
                 _co=_fo.groupby("country").size().reset_index(name="Orders")
                 _co=_co.sort_values("Orders",ascending=False).head(_tn)
                 if not _co.empty:
                     _f2=go.Figure(go.Bar(
                         x=_co["country"],y=_co["Orders"],
                         marker=dict(color=_co["Orders"],
-                            colorscale=[[0,"rgba(251,183,36,0.2)"],[1,C1]],showscale=False),
+                            colorscale=[[0,"rgba(34,211,238,0.2)"],[1,C1]],showscale=False),
                         text=_co["Orders"],textposition="outside",
                         hovertemplate="<b>%{x}</b><br>%{y} orders<extra></extra>"))
                     _f2.update_layout(**LO,height=280,
-                        xaxis=dict(showgrid=False,color="#475569"),
-                        yaxis=dict(showgrid=True,gridcolor=GRID,color="#475569"))
+                        xaxis=dict(showgrid=False,color="#64748B"),
+                        yaxis=dict(showgrid=True,gridcolor=GRID,color="#64748B"))
                     st.plotly_chart(_f2,use_container_width=True)
                 st.markdown('</div>', unsafe_allow_html=True)
 
@@ -933,8 +935,8 @@ elif _page == "📊 Dashboard":
 
             with _r3:
                 st.markdown('<div class="glass-card" style="padding:1rem;">', unsafe_allow_html=True)
-                st.markdown(f'<span style="font-size:0.82rem;font-weight:700;color:#F1F5F9;">Top {_tn} Products by Revenue</span>', unsafe_allow_html=True)
-                st.markdown('<span style="font-size:0.72rem;color:#475569;display:block;margin-bottom:0.4rem;">Best performing products ranked by sales</span>', unsafe_allow_html=True)
+                st.markdown(f'<span style="font-size:0.82rem;font-weight:700;color:#F8FAFC;">Top {_tn} Products by Revenue</span>', unsafe_allow_html=True)
+                st.markdown('<span style="font-size:0.72rem;color:#64748B;display:block;margin-bottom:0.4rem;">Best performing products ranked by sales</span>', unsafe_allow_html=True)
                 _pr=_fr.groupby("product_name")["line_total"].sum().reset_index()
                 _pr.columns=["Product","Revenue"]
                 _pr=_pr.sort_values("Revenue",ascending=True).tail(_tn)
@@ -942,19 +944,19 @@ elif _page == "📊 Dashboard":
                     _f3=go.Figure(go.Bar(
                         y=_pr["Product"],x=_pr["Revenue"],orientation="h",
                         marker=dict(color=_pr["Revenue"],
-                            colorscale=[[0,"rgba(16,185,129,0.2)"],[1,C2]],showscale=False),
+                            colorscale=[[0,"rgba(99,102,241,0.2)"],[1,C2]],showscale=False),
                         text=_pr["Revenue"].apply(lambda v:f"${v:,.0f}"),textposition="outside",
                         hovertemplate="<b>%{y}</b><br>$%{x:,.2f}<extra></extra>"))
                     _f3.update_layout(**LO,height=280,
-                        xaxis=dict(showgrid=True,gridcolor=GRID,color="#475569"),
-                        yaxis=dict(showgrid=False,color="#475569"))
+                        xaxis=dict(showgrid=True,gridcolor=GRID,color="#64748B"),
+                        yaxis=dict(showgrid=False,color="#64748B"))
                     st.plotly_chart(_f3,use_container_width=True)
                 st.markdown('</div>', unsafe_allow_html=True)
 
             with _r4:
                 st.markdown('<div class="glass-card" style="padding:1rem;">', unsafe_allow_html=True)
-                st.markdown('<span style="font-size:0.82rem;font-weight:700;color:#F1F5F9;">Freight Cost Analysis</span>', unsafe_allow_html=True)
-                st.markdown('<span style="font-size:0.72rem;color:#475569;display:block;margin-bottom:0.4rem;">Shipping expenditure by destination country</span>', unsafe_allow_html=True)
+                st.markdown('<span style="font-size:0.82rem;font-weight:700;color:#F8FAFC;">Freight Cost Analysis</span>', unsafe_allow_html=True)
+                st.markdown('<span style="font-size:0.72rem;color:#64748B;display:block;margin-bottom:0.4rem;">Shipping expenditure by destination country</span>', unsafe_allow_html=True)
                 _fg=_fo.groupby("country")["freight"].sum().reset_index()
                 _fg=_fg.sort_values("freight",ascending=False).head(_tn)
                 if not _fg.empty:
@@ -965,38 +967,38 @@ elif _page == "📊 Dashboard":
                         text=_fg["freight"].apply(lambda v:f"${v:,.1f}"),textposition="outside",
                         hovertemplate="<b>%{x}</b><br>$%{y:,.2f}<extra></extra>"))
                     _f4.update_layout(**LO,height=280,
-                        xaxis=dict(showgrid=False,color="#475569"),
-                        yaxis=dict(showgrid=True,gridcolor=GRID,color="#475569"))
+                        xaxis=dict(showgrid=False,color="#64748B"),
+                        yaxis=dict(showgrid=True,gridcolor=GRID,color="#64748B"))
                     st.plotly_chart(_f4,use_container_width=True)
                 st.markdown('</div>', unsafe_allow_html=True)
 
             # ── Row 4: Treemap + Supplier Performance ─────────────────────────────
-            st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.1em;margin:0.5rem 0 0.6rem;border-left:3px solid #10B981;padding-left:0.6rem;">&#128269; Product & Supplier Intelligence</p>', unsafe_allow_html=True)
+            st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#22D3EE;text-transform:uppercase;letter-spacing:0.1em;margin:0.5rem 0 0.6rem;border-left:3px solid #6366F1;padding-left:0.6rem;">&#128269; Product & Supplier Intelligence</p>', unsafe_allow_html=True)
             _r5,_r6 = st.columns([3,2])
 
             with _r5:
                 st.markdown('<div class="glass-card" style="padding:1rem;">', unsafe_allow_html=True)
-                st.markdown('<span style="font-size:0.82rem;font-weight:700;color:#F1F5F9;">Product Revenue Treemap</span>', unsafe_allow_html=True)
-                st.markdown('<span style="font-size:0.72rem;color:#475569;display:block;margin-bottom:0.4rem;">Click a category to drill into products</span>', unsafe_allow_html=True)
+                st.markdown('<span style="font-size:0.82rem;font-weight:700;color:#F8FAFC;">Product Revenue Treemap</span>', unsafe_allow_html=True)
+                st.markdown('<span style="font-size:0.72rem;color:#64748B;display:block;margin-bottom:0.4rem;">Click a category to drill into products</span>', unsafe_allow_html=True)
                 _tree=_fr.groupby(["category","product_name"])["line_total"].sum().reset_index()
                 _tree.columns=["Category","Product","Revenue"]
                 if not _tree.empty:
                     _f5=px.treemap(_tree,path=["Category","Product"],values="Revenue",
                         color="Revenue",
-                        color_continuous_scale=[[0,"rgba(251,183,36,0.15)"],[0.5,C1],[1,"#78350F"]])
+                        color_continuous_scale=[[0,"rgba(34,211,238,0.15)"],[0.5,C1],[1,"#78350F"]])
                     _f5.update_traces(
                         texttemplate="<b>%{label}</b><br>$%{value:,.0f}",
                         hovertemplate="<b>%{label}</b><br>$%{value:,.2f}<extra></extra>")
                     _f5.update_layout(margin=dict(t=10,b=10,l=10,r=10),height=340,
                         coloraxis_showscale=False,paper_bgcolor=BG,
-                        font=dict(family="Inter,sans-serif",size=11,color="#F1F5F9"))
+                        font=dict(family="Inter,sans-serif",size=11,color="#F8FAFC"))
                     st.plotly_chart(_f5,use_container_width=True)
                 st.markdown('</div>', unsafe_allow_html=True)
 
             with _r6:
                 st.markdown('<div class="glass-card" style="padding:1rem;">', unsafe_allow_html=True)
-                st.markdown('<span style="font-size:0.82rem;font-weight:700;color:#F1F5F9;">Supplier Performance</span>', unsafe_allow_html=True)
-                st.markdown('<span style="font-size:0.72rem;color:#475569;display:block;margin-bottom:0.4rem;">Products supplied per vendor</span>', unsafe_allow_html=True)
+                st.markdown('<span style="font-size:0.82rem;font-weight:700;color:#F8FAFC;">Supplier Performance</span>', unsafe_allow_html=True)
+                st.markdown('<span style="font-size:0.72rem;color:#64748B;display:block;margin-bottom:0.4rem;">Products supplied per vendor</span>', unsafe_allow_html=True)
                 _sup=_ds.merge(
                     _dp.groupby("supplier_id").size().reset_index(name="Products"),
                     on="supplier_id",how="left").fillna(0)
@@ -1011,13 +1013,13 @@ elif _page == "📊 Dashboard":
                     hovertemplate="<b>%{y}</b><br>Products: %{x}<extra></extra>"))
                 _f6.update_layout(margin=dict(t=5,b=5,l=5,r=30),height=340,
                     paper_bgcolor=BG,plot_bgcolor=BG,font=FONT,
-                    xaxis=dict(showgrid=True,gridcolor=GRID,color="#475569"),
-                    yaxis=dict(showgrid=False,color="#475569",autorange="reversed"))
+                    xaxis=dict(showgrid=True,gridcolor=GRID,color="#64748B"),
+                    yaxis=dict(showgrid=False,color="#64748B",autorange="reversed"))
                 st.plotly_chart(_f6,use_container_width=True)
                 st.markdown('</div>', unsafe_allow_html=True)
 
             # ── Row 5: Orders Explorer ────────────────────────────────────────────
-            st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.1em;margin:0.5rem 0 0.6rem;border-left:3px solid #10B981;padding-left:0.6rem;">&#128203; Orders Explorer</p>', unsafe_allow_html=True)
+            st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#22D3EE;text-transform:uppercase;letter-spacing:0.1em;margin:0.5rem 0 0.6rem;border-left:3px solid #6366F1;padding-left:0.6rem;">&#128203; Orders Explorer</p>', unsafe_allow_html=True)
             st.markdown('<div class="glass-card" style="padding:1rem;">', unsafe_allow_html=True)
             _srch=st.text_input("Search orders",placeholder="Search by company or country...",
                 key="db_srch",label_visibility="collapsed")
@@ -1068,30 +1070,30 @@ elif _page == "📊 Dashboard":
     with _sub_tabs[1]:
         # ── Workspace Header ──
         st.markdown("""
-        <div style="background:linear-gradient(135deg,rgba(16,185,129,0.06) 0%,rgba(139,92,246,0.04) 50%,rgba(245,158,11,0.03) 100%);
-            border:1px solid rgba(16,185,129,0.2);border-radius:16px;
+        <div style="background:linear-gradient(135deg,rgba(99,102,241,0.06) 0%,rgba(139,92,246,0.04) 50%,rgba(245,158,11,0.03) 100%);
+            border:1px solid rgba(99,102,241,0.2);border-radius:16px;
             padding:1.5rem 2rem;margin-bottom:1.5rem;position:relative;overflow:hidden;">
             <div style="position:absolute;top:-30px;right:-30px;width:200px;height:200px;
                 background:radial-gradient(circle,rgba(139,92,246,0.08) 0%,transparent 70%);
                 pointer-events:none;"></div>
             <div style="display:flex;align-items:center;gap:12px;margin-bottom:0.5rem;">
-                <div style="width:42px;height:42px;background:linear-gradient(135deg,#10B981,#8B5CF6);
+                <div style="width:42px;height:42px;background:linear-gradient(135deg,#6366F1,#8B5CF6);
                     border-radius:12px;display:flex;align-items:center;justify-content:center;
                     font-size:1.3rem;flex-shrink:0;">📁</div>
                 <div>
                     <div style="font-size:1.2rem;font-weight:800;
-                        background:linear-gradient(90deg,#FFFFFF 0%,#10B981 60%,#8B5CF6 100%);
+                        background:linear-gradient(90deg,#FFFFFF 0%,#6366F1 60%,#8B5CF6 100%);
                         -webkit-background-clip:text;-webkit-text-fill-color:transparent;
                         background-clip:text;">Multi-Dataset Analytics Workspace</div>
-                    <div style="font-size:0.78rem;color:#64748B;">
+                    <div style="font-size:0.78rem;color:#94A3B8;">
                         Upload · Preview · Merge · Filter · Visualize · AI Analysis · Export
                     </div>
                 </div>
             </div>
             <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.6rem;">
-                <span style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.25);
+                <span style="background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.25);
                     border-radius:20px;padding:0.2rem 0.7rem;font-size:0.7rem;
-                    color:#10B981;font-weight:600;">CSV &amp; Excel</span>
+                    color:#6366F1;font-weight:600;">CSV &amp; Excel</span>
                 <span style="background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.25);
                     border-radius:20px;padding:0.2rem 0.7rem;font-size:0.7rem;
                     color:#8B5CF6;font-weight:600;">AI-Powered Insights</span>
@@ -1114,12 +1116,12 @@ elif _page == "📊 Dashboard":
             st.markdown("""
             <div class="glass-card" style="padding:1.2rem;min-height:240px;">
                 <div style="display:flex;align-items:center;gap:8px;margin-bottom:0.8rem;">
-                    <div style="width:32px;height:32px;background:rgba(16,185,129,0.15);
-                        border:1px solid rgba(16,185,129,0.3);border-radius:8px;
+                    <div style="width:32px;height:32px;background:rgba(99,102,241,0.15);
+                        border:1px solid rgba(99,102,241,0.3);border-radius:8px;
                         display:flex;align-items:center;justify-content:center;font-size:1rem;">⚡</div>
-                    <span style="font-size:0.9rem;font-weight:700;color:#F1F5F9;">Upload Datasets</span>
+                    <span style="font-size:0.9rem;font-weight:700;color:#F8FAFC;">Upload Datasets</span>
                 </div>
-                <div style="font-size:0.78rem;color:#64748B;margin-bottom:0.8rem;">
+                <div style="font-size:0.78rem;color:#94A3B8;margin-bottom:0.8rem;">
                     Drag and drop CSV or Excel files (max 50MB each). Each file becomes a queryable table.
                 </div>
             """, unsafe_allow_html=True)
@@ -1176,8 +1178,8 @@ elif _page == "📊 Dashboard":
                     <div style="width:32px;height:32px;background:rgba(139,92,246,0.15);
                         border:1px solid rgba(139,92,246,0.3);border-radius:8px;
                         display:flex;align-items:center;justify-content:center;font-size:1rem;">📋</div>
-                    <span style="font-size:0.9rem;font-weight:700;color:#F1F5F9;">Loaded Datasets</span>
-                    <span style="background:rgba(16,185,129,0.15);color:#10B981;font-size:0.68rem;
+                    <span style="font-size:0.9rem;font-weight:700;color:#F8FAFC;">Loaded Datasets</span>
+                    <span style="background:rgba(99,102,241,0.15);color:#6366F1;font-size:0.68rem;
                         font-weight:700;padding:0.15rem 0.5rem;border-radius:10px;margin-left:auto;">""" + str(len(st.session_state.uploaded_datasets)) + """ loaded</span>
                 </div>
             """, unsafe_allow_html=True)
@@ -1186,7 +1188,7 @@ elif _page == "📊 Dashboard":
                 st.markdown("""
                 <div style="text-align:center;padding:1.5rem 0;">
                     <div style="font-size:2.5rem;margin-bottom:0.5rem;opacity:0.4;">📂</div>
-                    <div style="font-size:0.85rem;color:#475569;font-weight:600;">No datasets yet</div>
+                    <div style="font-size:0.85rem;color:#64748B;font-weight:600;">No datasets yet</div>
                     <div style="font-size:0.75rem;color:#334155;margin-top:0.2rem;">Upload CSV or Excel files to begin</div>
                 </div>
                 """, unsafe_allow_html=True)
@@ -1224,7 +1226,7 @@ elif _page == "📊 Dashboard":
         if st.session_state.uploaded_datasets:
 
             # ── 2. AUTO-GENERATED DATASET INSIGHTS (KPI SUMMARY CARDS + SPARKLINES) ──
-            st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #10B981;padding-left:0.6rem;">⚡ Dataset Overview &amp; Auto-Insights</p>', unsafe_allow_html=True)
+            st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#22D3EE;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #6366F1;padding-left:0.6rem;">⚡ Dataset Overview &amp; Auto-Insights</p>', unsafe_allow_html=True)
 
             _insight_ds = st.selectbox("Select dataset for insights:", list(st.session_state.uploaded_datasets.keys()), key="insight_ds_sel")
             _df_ins = st.session_state.uploaded_datasets[_insight_ds]
@@ -1254,11 +1256,11 @@ elif _page == "📊 Dashboard":
                         border-top:3px solid {_clr};border-radius:12px;padding:0.8rem 0.6rem;
                         text-align:center;transition:all 0.2s;">
                         <div style="font-size:1.1rem;margin-bottom:0.2rem;">{_ico}</div>
-                        <div style="font-size:0.65rem;font-weight:700;color:#64748B;
+                        <div style="font-size:0.65rem;font-weight:700;color:#94A3B8;
                             text-transform:uppercase;letter-spacing:0.08em;">{_lbl}</div>
                         <div style="font-size:1.3rem;font-weight:800;color:{_clr};
                             line-height:1.1;margin:0.15rem 0;">{_val}</div>
-                        <div style="font-size:0.62rem;color:#475569;">{_sub}</div>
+                        <div style="font-size:0.62rem;color:#64748B;">{_sub}</div>
                     </div>""", unsafe_allow_html=True)
 
             # ── Auto-Summary Text ──
@@ -1277,10 +1279,10 @@ elif _page == "📊 Dashboard":
                 _auto_summary_parts.append(f"Top numeric column: `{_top_num}` (mean: {_df_ins[_top_num].mean():.2f}, range: {_df_ins[_top_num].min():.2f}–{_df_ins[_top_num].max():.2f}).")
 
             st.markdown(f"""
-            <div style="background:linear-gradient(90deg,rgba(16,185,129,0.06),rgba(139,92,246,0.04));
-                border:1px solid rgba(16,185,129,0.15);border-radius:10px;
+            <div style="background:linear-gradient(90deg,rgba(99,102,241,0.06),rgba(139,92,246,0.04));
+                border:1px solid rgba(99,102,241,0.15);border-radius:10px;
                 padding:0.8rem 1.2rem;margin:0.8rem 0;font-size:0.82rem;">
-                <span style="color:#10B981;font-weight:700;">&#10022; Auto-Summary</span>
+                <span style="color:#6366F1;font-weight:700;">&#10022; Auto-Summary</span>
                 <span style="color:#94A3B8;display:block;margin-top:0.3rem;line-height:1.7;">
                     {" ".join(_auto_summary_parts)}
                 </span>
@@ -1305,13 +1307,13 @@ elif _page == "📊 Dashboard":
                                 xaxis=dict(visible=False), yaxis=dict(visible=False),
                                 showlegend=False
                             )
-                            st.markdown(f'<div style="font-size:0.68rem;font-weight:600;color:#64748B;text-align:center;margin-bottom:2px;">{_scol_name}</div>', unsafe_allow_html=True)
+                            st.markdown(f'<div style="font-size:0.68rem;font-weight:600;color:#94A3B8;text-align:center;margin-bottom:2px;">{_scol_name}</div>', unsafe_allow_html=True)
                             st.plotly_chart(_spark_fig, use_container_width=True, key=f"spark_{_insight_ds}_{_scol_name}")
 
             st.markdown("<br>", unsafe_allow_html=True)
 
             # ── 3. QUICK ACTION TOOLBAR ──
-            st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #10B981;padding-left:0.6rem;">⚡ Quick Actions</p>', unsafe_allow_html=True)
+            st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#22D3EE;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #6366F1;padding-left:0.6rem;">⚡ Quick Actions</p>', unsafe_allow_html=True)
             _qa1, _qa2, _qa3, _qa4, _qa5 = st.columns(5)
             with _qa1:
                 _show_head = st.button("📄 Head (10)", use_container_width=True, key="qa_head")
@@ -1326,12 +1328,12 @@ elif _page == "📊 Dashboard":
 
             if _show_head:
                 st.markdown('<div class="glass-card" style="padding:1rem;">', unsafe_allow_html=True)
-                st.markdown(f'<span style="font-size:0.82rem;font-weight:700;color:#10B981;">First 10 rows of {_insight_ds}</span>', unsafe_allow_html=True)
+                st.markdown(f'<span style="font-size:0.82rem;font-weight:700;color:#6366F1;">First 10 rows of {_insight_ds}</span>', unsafe_allow_html=True)
                 st.dataframe(_df_ins.head(10), use_container_width=True, hide_index=True)
                 st.markdown('</div>', unsafe_allow_html=True)
             if _show_tail:
                 st.markdown('<div class="glass-card" style="padding:1rem;">', unsafe_allow_html=True)
-                st.markdown(f'<span style="font-size:0.82rem;font-weight:700;color:#10B981;">Last 10 rows of {_insight_ds}</span>', unsafe_allow_html=True)
+                st.markdown(f'<span style="font-size:0.82rem;font-weight:700;color:#6366F1;">Last 10 rows of {_insight_ds}</span>', unsafe_allow_html=True)
                 st.dataframe(_df_ins.tail(10), use_container_width=True, hide_index=True)
                 st.markdown('</div>', unsafe_allow_html=True)
             if _show_describe:
@@ -1365,7 +1367,7 @@ elif _page == "📊 Dashboard":
             st.markdown("<br>", unsafe_allow_html=True)
 
             # ── 4. DATA QUALITY PROFILING WITH DISTRIBUTION PLOTS ──
-            st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #10B981;padding-left:0.6rem;">🔬 Data Quality Profile</p>', unsafe_allow_html=True)
+            st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#22D3EE;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #6366F1;padding-left:0.6rem;">🔬 Data Quality Profile</p>', unsafe_allow_html=True)
             st.markdown('<div class="glass-card" style="padding:1.2rem;">', unsafe_allow_html=True)
 
             _quality_tabs = st.tabs(["📄 Data Preview", "📋 Column Profile", "📈 Statistics", "📊 Distributions", "🩺 Data Health"])
@@ -1417,8 +1419,8 @@ elif _page == "📊 Dashboard":
                                     _dfig.update_layout(
                                         **LO, height=200,
                                         title=dict(text=_dcol_name, font=dict(size=11, color="#94A3B8"), x=0.5),
-                                        xaxis=dict(showgrid=False, color="#475569", title=""),
-                                        yaxis=dict(showgrid=True, gridcolor=GRID, color="#475569", title=""),
+                                        xaxis=dict(showgrid=False, color="#64748B", title=""),
+                                        yaxis=dict(showgrid=True, gridcolor=GRID, color="#64748B", title=""),
                                         showlegend=False
                                     )
                                     st.plotly_chart(_dfig, use_container_width=True, key=f"dist_{_insight_ds}_{_dcol_name}")
@@ -1426,14 +1428,14 @@ elif _page == "📊 Dashboard":
             with _quality_tabs[4]:
                 # Data health score
                 _health_score = _completeness
-                _health_color = "#10B981" if _health_score >= 90 else "#F59E0B" if _health_score >= 70 else "#EF4444"
+                _health_color = "#6366F1" if _health_score >= 90 else "#F59E0B" if _health_score >= 70 else "#EF4444"
                 _health_label = "Excellent" if _health_score >= 90 else "Good" if _health_score >= 70 else "Needs Attention"
 
                 st.markdown(f"""
                 <div style="text-align:center;padding:1.5rem 0;">
                     <div style="font-size:3rem;font-weight:900;color:{_health_color};line-height:1;">{_health_score}%</div>
                     <div style="font-size:0.85rem;font-weight:700;color:{_health_color};margin-top:0.3rem;">{_health_label}</div>
-                    <div style="font-size:0.72rem;color:#475569;margin-top:0.2rem;">Data Quality Score</div>
+                    <div style="font-size:0.72rem;color:#64748B;margin-top:0.2rem;">Data Quality Score</div>
                 </div>
                 """, unsafe_allow_html=True)
 
@@ -1456,8 +1458,8 @@ elif _page == "📊 Dashboard":
                         <div style="display:flex;align-items:center;gap:10px;">
                             <span style="font-size:1.1rem;">{_hi_icon}</span>
                             <div>
-                                <div style="font-size:0.82rem;font-weight:600;color:#E2E8F0;">{_hi_title}</div>
-                                <div style="font-size:0.72rem;color:#475569;">{_hi_desc}</div>
+                                <div style="font-size:0.82rem;font-weight:600;color:#F8FAFC;">{_hi_title}</div>
+                                <div style="font-size:0.72rem;color:#64748B;">{_hi_desc}</div>
                             </div>
                         </div>
                     </div>""", unsafe_allow_html=True)
@@ -1467,7 +1469,7 @@ elif _page == "📊 Dashboard":
 
             # ── 5. CORRELATION HEATMAP ──
             if len(_num_cols_ins) >= 2:
-                st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #10B981;padding-left:0.6rem;">🔥 Correlation Heatmap</p>', unsafe_allow_html=True)
+                st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#22D3EE;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #6366F1;padding-left:0.6rem;">🔥 Correlation Heatmap</p>', unsafe_allow_html=True)
                 st.markdown('<div class="glass-card" style="padding:1.2rem;">', unsafe_allow_html=True)
                 st.markdown('<p style="font-size:0.8rem;color:#94A3B8;margin-bottom:0.8rem;">Pearson correlation between numeric columns. Stronger correlations are highlighted.</p>', unsafe_allow_html=True)
 
@@ -1477,20 +1479,20 @@ elif _page == "📊 Dashboard":
                         z=_corr.values,
                         x=_corr.columns.tolist(),
                         y=_corr.columns.tolist(),
-                        colorscale=[[0,"#1E1B4B"],[0.25,"#312E81"],[0.5,"#0F172A"],[0.75,"#065F46"],[1,"#10B981"]],
+                        colorscale=[[0,"#1E1B4B"],[0.25,"#312E81"],[0.5,"#0F172A"],[0.75,"#065F46"],[1,"#6366F1"]],
                         text=_corr.values.round(2),
                         texttemplate="%{text}",
-                        textfont=dict(size=11, color="#E2E8F0"),
+                        textfont=dict(size=11, color="#F8FAFC"),
                         hovertemplate="<b>%{x} vs %{y}</b><br>Correlation: %{z:.2f}<extra></extra>",
                         showscale=True,
-                        colorbar=dict(tickfont=dict(color="#64748B"), title=dict(text="r", font=dict(color="#64748B")))
+                        colorbar=dict(tickfont=dict(color="#94A3B8"), title=dict(text="r", font=dict(color="#94A3B8")))
                     ))
                     _heatmap_fig.update_layout(
                         paper_bgcolor=BG, plot_bgcolor=BG, font=FONT,
                         height=max(280, len(_num_cols_ins) * 40),
                         margin=dict(t=10, b=10, l=10, r=10),
-                        xaxis=dict(color="#475569", tickangle=45),
-                        yaxis=dict(color="#475569", autorange="reversed")
+                        xaxis=dict(color="#64748B", tickangle=45),
+                        yaxis=dict(color="#64748B", autorange="reversed")
                     )
                     st.plotly_chart(_heatmap_fig, use_container_width=True)
                 except Exception as _he:
@@ -1501,7 +1503,7 @@ elif _page == "📊 Dashboard":
 
             # ── 6. DATASET COMBINER / JOIN BUILDER ──
             if len(st.session_state.uploaded_datasets) >= 2:
-                st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #10B981;padding-left:0.6rem;">🔀 Dataset Combiner / Join Builder</p>', unsafe_allow_html=True)
+                st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#22D3EE;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #6366F1;padding-left:0.6rem;">🔀 Dataset Combiner / Join Builder</p>', unsafe_allow_html=True)
                 st.markdown('<div class="glass-card" style="padding:1.2rem;">', unsafe_allow_html=True)
                 st.markdown('<p style="font-size:0.8rem;color:#94A3B8;margin-bottom:1rem;">Merge two uploaded datasets on a shared key column.</p>', unsafe_allow_html=True)
 
@@ -1541,7 +1543,7 @@ elif _page == "📊 Dashboard":
 
             # ── 7. CROSS-DATASET COMPARISON ──
             if len(st.session_state.uploaded_datasets) >= 2:
-                st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #10B981;padding-left:0.6rem;">⚖️ Cross-Dataset Comparison</p>', unsafe_allow_html=True)
+                st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#22D3EE;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #6366F1;padding-left:0.6rem;">⚖️ Cross-Dataset Comparison</p>', unsafe_allow_html=True)
                 st.markdown('<div class="glass-card" style="padding:1.2rem;">', unsafe_allow_html=True)
                 st.markdown('<p style="font-size:0.8rem;color:#94A3B8;margin-bottom:0.8rem;">Compare key statistics side-by-side between two datasets.</p>', unsafe_allow_html=True)
 
@@ -1591,7 +1593,7 @@ elif _page == "📊 Dashboard":
                 st.markdown("<br>", unsafe_allow_html=True)
 
             # ── 8. INTERACTIVE FILTER SLICER ──
-            st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #10B981;padding-left:0.6rem;">🎛️ Interactive Data Slicer</p>', unsafe_allow_html=True)
+            st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#22D3EE;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #6366F1;padding-left:0.6rem;">🎛️ Interactive Data Slicer</p>', unsafe_allow_html=True)
             st.markdown('<div class="glass-card" style="padding:1.2rem;">', unsafe_allow_html=True)
 
             _slice_ds = st.selectbox("Dataset to filter:", list(st.session_state.uploaded_datasets.keys()), key="slice_ds")
@@ -1639,8 +1641,8 @@ elif _page == "📊 Dashboard":
 
                 st.markdown(f"""
                 <div style="display:flex;align-items:center;gap:8px;margin:0.4rem 0;">
-                    <span style="color:#10B981;font-size:0.8rem;font-weight:600;">✓ {len(_df_filtered):,} of {len(_df_slice):,} rows</span>
-                    <span style="color:#475569;font-size:0.72rem;">({round(len(_df_filtered)/max(len(_df_slice),1)*100,1)}% match)</span>
+                    <span style="color:#6366F1;font-size:0.8rem;font-weight:600;">✓ {len(_df_filtered):,} of {len(_df_slice):,} rows</span>
+                    <span style="color:#64748B;font-size:0.72rem;">({round(len(_df_filtered)/max(len(_df_slice),1)*100,1)}% match)</span>
                 </div>""", unsafe_allow_html=True)
                 st.dataframe(_df_filtered.head(100), use_container_width=True, hide_index=True)
 
@@ -1676,7 +1678,7 @@ elif _page == "📊 Dashboard":
             st.markdown("<br>", unsafe_allow_html=True)
 
             # ── 9. SMART CHART RECOMMENDATIONS + ENHANCED CHART BUILDER ──
-            st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #10B981;padding-left:0.6rem;">📊 Interactive Chart Builder</p>', unsafe_allow_html=True)
+            st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#22D3EE;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #6366F1;padding-left:0.6rem;">📊 Interactive Chart Builder</p>', unsafe_allow_html=True)
             st.markdown('<div class="glass-card" style="padding:1.2rem;">', unsafe_allow_html=True)
 
             _vis_ds = st.selectbox("Select dataset:", list(st.session_state.uploaded_datasets.keys()), key="vis_ds")
@@ -1770,18 +1772,18 @@ elif _page == "📊 Dashboard":
                 if _fig is not None:
                     _fig.update_layout(**LO, height=380)
                     if _chart_title:
-                        _fig.update_layout(title=dict(text=_chart_title, font=dict(size=14, color="#F1F5F9"), x=0.5))
+                        _fig.update_layout(title=dict(text=_chart_title, font=dict(size=14, color="#F8FAFC"), x=0.5))
                     if _vtype not in ["Pie Chart"]:
                         _fig.update_layout(
-                            xaxis=dict(showgrid=False, color="#475569"),
-                            yaxis=dict(showgrid=True, gridcolor=GRID, color="#475569")
+                            xaxis=dict(showgrid=False, color="#64748B"),
+                            yaxis=dict(showgrid=True, gridcolor=GRID, color="#64748B")
                         )
                     st.plotly_chart(_fig, use_container_width=True)
                     st.markdown(f"""
                     <div style="display:flex;align-items:center;justify-content:space-between;padding:0.4rem 0.8rem;
                         background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);
                         border-radius:8px;margin-top:0.3rem;">
-                        <span style="font-size:0.72rem;color:#475569;">
+                        <span style="font-size:0.72rem;color:#64748B;">
                             {_vtype} · {_vis_ds} · {_agg_mode} · {len(_chart_df)} data points
                         </span>
                         <span style="font-size:0.68rem;color:#334155;">
@@ -1795,7 +1797,7 @@ elif _page == "📊 Dashboard":
             st.markdown("<br>", unsafe_allow_html=True)
 
             # ── 10. AI COPILOT FOR UPLOADED DATASETS ──
-            st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #10B981;padding-left:0.6rem;">🧠 AI Copilot — Natural Language Analysis</p>', unsafe_allow_html=True)
+            st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#22D3EE;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #6366F1;padding-left:0.6rem;">🧠 AI Copilot — Natural Language Analysis</p>', unsafe_allow_html=True)
             st.markdown("""
             <div class="glass-card" style="padding:1.2rem;border-top:3px solid #8B5CF6;">
                 <div style="display:flex;align-items:center;gap:10px;margin-bottom:0.8rem;">
@@ -1803,8 +1805,8 @@ elif _page == "📊 Dashboard":
                         border-radius:10px;display:flex;align-items:center;justify-content:center;
                         font-size:1.1rem;animation:glow 3s ease-in-out infinite;">🧠</div>
                     <div>
-                        <div style="font-size:0.9rem;font-weight:700;color:#F1F5F9;">AI Dataset Copilot</div>
-                        <div style="font-size:0.72rem;color:#64748B;">Ask questions about your data in plain English — AI writes SQL, runs it, and summarizes findings.</div>
+                        <div style="font-size:0.9rem;font-weight:700;color:#F8FAFC;">AI Dataset Copilot</div>
+                        <div style="font-size:0.72rem;color:#94A3B8;">Ask questions about your data in plain English — AI writes SQL, runs it, and summarizes findings.</div>
                     </div>
                 </div>
             """, unsafe_allow_html=True)
@@ -1875,8 +1877,8 @@ elif _page == "📊 Dashboard":
                                     _auto_fig = px.bar(_df_res.head(20), x=_res_cat[0], y=_res_num[0],
                                                         color_discrete_sequence=["#8B5CF6"])
                                     _auto_fig.update_layout(**LO, height=280,
-                                        xaxis=dict(showgrid=False, color="#475569"),
-                                        yaxis=dict(showgrid=True, gridcolor=GRID, color="#475569"))
+                                        xaxis=dict(showgrid=False, color="#64748B"),
+                                        yaxis=dict(showgrid=True, gridcolor=GRID, color="#64748B"))
                                     st.plotly_chart(_auto_fig, use_container_width=True)
                                 except Exception:
                                     pass
@@ -1886,14 +1888,14 @@ elif _page == "📊 Dashboard":
                             _ai_insight_txt = generate_ai_insight(_ds_question.strip(), _ds_sql, _df_summary)
 
                             st.markdown(f"""
-                            <div style="background:linear-gradient(135deg,rgba(139,92,246,0.06),rgba(16,185,129,0.04));
+                            <div style="background:linear-gradient(135deg,rgba(139,92,246,0.06),rgba(99,102,241,0.04));
                                 border:1px solid rgba(139,92,246,0.25);
                                 border-radius:12px;padding:1rem 1.2rem;margin-top:0.8rem;">
                                 <div style="display:flex;align-items:center;gap:8px;margin-bottom:0.4rem;">
                                     <span style="font-size:1.1rem;">💡</span>
                                     <span style="color:#A78BFA;font-weight:700;font-size:0.85rem;">AI Executive Summary</span>
                                 </div>
-                                <p style="color:#E2E8F0;font-size:0.83rem;margin:0;line-height:1.7;">{_ai_insight_txt}</p>
+                                <p style="color:#F8FAFC;font-size:0.83rem;margin:0;line-height:1.7;">{_ai_insight_txt}</p>
                             </div>
                             """, unsafe_allow_html=True)
 
@@ -1932,7 +1934,7 @@ elif _page == "📊 Dashboard":
             st.markdown("<br>", unsafe_allow_html=True)
 
             # ── 11. DOWNLOADABLE SUMMARY REPORT ──
-            st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#FBB724;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #10B981;padding-left:0.6rem;">📋 Downloadable Summary Report</p>', unsafe_allow_html=True)
+            st.markdown('<p style="font-size:0.72rem;font-weight:700;color:#22D3EE;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.6rem;border-left:3px solid #6366F1;padding-left:0.6rem;">📋 Downloadable Summary Report</p>', unsafe_allow_html=True)
             st.markdown('<div class="glass-card" style="padding:1.2rem;">', unsafe_allow_html=True)
             st.markdown('<p style="font-size:0.8rem;color:#94A3B8;margin-bottom:0.8rem;">Generate a comprehensive report of all loaded datasets — download as CSV, Excel, or text.</p>', unsafe_allow_html=True)
 
@@ -2023,9 +2025,9 @@ elif _page == "📊 Dashboard":
 # HISTORY PAGE
 # ══════════════════════════════════════════════════════════════════════════════
 elif _page == "📜 History":
-    st.markdown('<div style="font-size:1.8rem;font-weight:800;color:#FFFFFF!important;-webkit-text-fill-color:#FFFFFF!important;margin-bottom:0.4rem;">&#128220; Query History</div><div style="font-size:0.9rem;color:#475569!important;margin-bottom:1.5rem;">All your recent queries — re-run, copy, or save them</div>',unsafe_allow_html=True)
+    st.markdown('<div style="font-size:1.8rem;font-weight:800;color:#FFFFFF!important;-webkit-text-fill-color:#FFFFFF!important;margin-bottom:0.4rem;">&#128220; Query History</div><div style="font-size:0.9rem;color:#64748B!important;margin-bottom:1.5rem;">All your recent queries — re-run, copy, or save them</div>',unsafe_allow_html=True)
     if not st.session_state.history:
-        st.markdown('<div class="glass-card" style="text-align:center;padding:3rem;"><div style="font-size:3rem;margin-bottom:1rem;">&#128219;</div><div style="font-size:1rem;font-weight:600;color:#64748B!important;">No queries yet</div><div style="font-size:0.85rem;color:#334155!important;margin-top:0.4rem;">Go to Query page and ask your first question</div></div>',unsafe_allow_html=True)
+        st.markdown('<div class="glass-card" style="text-align:center;padding:3rem;"><div style="font-size:3rem;margin-bottom:1rem;">&#128219;</div><div style="font-size:1rem;font-weight:600;color:#94A3B8!important;">No queries yet</div><div style="font-size:0.85rem;color:#334155!important;margin-top:0.4rem;">Go to Query page and ask your first question</div></div>',unsafe_allow_html=True)
     else:
         if st.button("&#128465; Clear All", key="hist_clear"):
             st.session_state.history=[];st.rerun()
@@ -2034,7 +2036,7 @@ elif _page == "📜 History":
                 _hc1,_hc2,_hc3=st.columns([3,1,1])
                 with _hc1:
                     st.markdown(f"**{_item['question']}**")
-                    st.markdown(f"<span style='color:#475569;font-size:0.78rem;'>&#128336; {_item.get('date','')} {_item.get('time','')} &nbsp;&middot;&nbsp; &#128202; {_item['rows']} rows</span>",unsafe_allow_html=True)
+                    st.markdown(f"<span style='color:#64748B;font-size:0.78rem;'>&#128336; {_item.get('date','')} {_item.get('time','')} &nbsp;&middot;&nbsp; &#128202; {_item['rows']} rows</span>",unsafe_allow_html=True)
                 with _hc2:
                     if st.button("&#9654; Re-run",key=f"hr_{_i}",use_container_width=True):
                         st.session_state.pending_question=_item["question"]
@@ -2051,12 +2053,12 @@ elif _page == "📜 History":
 # SAVED PAGE
 # ══════════════════════════════════════════════════════════════════════════════
 elif _page == "💾 Saved":
-    st.markdown('<div style="font-size:1.8rem;font-weight:800;color:#FFFFFF!important;-webkit-text-fill-color:#FFFFFF!important;margin-bottom:0.4rem;">&#128190; Saved Queries</div><div style="font-size:0.9rem;color:#475569!important;margin-bottom:1.5rem;">Your bookmarked queries for quick access</div>',unsafe_allow_html=True)
+    st.markdown('<div style="font-size:1.8rem;font-weight:800;color:#FFFFFF!important;-webkit-text-fill-color:#FFFFFF!important;margin-bottom:0.4rem;">&#128190; Saved Queries</div><div style="font-size:0.9rem;color:#64748B!important;margin-bottom:1.5rem;">Your bookmarked queries for quick access</div>',unsafe_allow_html=True)
     if not st.session_state.saved_queries:
-        st.markdown('<div class="glass-card" style="text-align:center;padding:3rem;"><div style="font-size:3rem;margin-bottom:1rem;">&#128278;</div><div style="font-size:1rem;font-weight:600;color:#64748B!important;">No saved queries</div><div style="font-size:0.85rem;color:#334155!important;margin-top:0.4rem;">Save queries from the Query or History pages</div></div>',unsafe_allow_html=True)
+        st.markdown('<div class="glass-card" style="text-align:center;padding:3rem;"><div style="font-size:3rem;margin-bottom:1rem;">&#128278;</div><div style="font-size:1rem;font-weight:600;color:#94A3B8!important;">No saved queries</div><div style="font-size:0.85rem;color:#334155!important;margin-top:0.4rem;">Save queries from the Query or History pages</div></div>',unsafe_allow_html=True)
     else:
         for _i,_q in enumerate(st.session_state.saved_queries,1):
-            st.markdown(f'<div class="history-item"><div style="font-size:0.88rem;font-weight:600;color:#E2E8F0!important;">&#128278; {_q}</div></div>',unsafe_allow_html=True)
+            st.markdown(f'<div class="history-item"><div style="font-size:0.88rem;font-weight:600;color:#F8FAFC!important;">&#128278; {_q}</div></div>',unsafe_allow_html=True)
             _sc1,_sc2,_sc3=st.columns([1,1,6])
             with _sc1:
                 if st.button("&#9654; Run",key=f"sv_{_i}",use_container_width=True):
@@ -2070,7 +2072,7 @@ elif _page == "💾 Saved":
 # SCHEMA PAGE
 # ══════════════════════════════════════════════════════════════════════════════
 elif _page == "📋 Schema":
-    st.markdown('<div style="font-size:1.8rem;font-weight:800;color:#FFFFFF!important;-webkit-text-fill-color:#FFFFFF!important;margin-bottom:0.4rem;">&#128203; Schema Explorer</div><div style="font-size:0.9rem;color:#475569!important;margin-bottom:1.5rem;">Browse your database structure and preview data</div>',unsafe_allow_html=True)
+    st.markdown('<div style="font-size:1.8rem;font-weight:800;color:#FFFFFF!important;-webkit-text-fill-color:#FFFFFF!important;margin-bottom:0.4rem;">&#128203; Schema Explorer</div><div style="font-size:0.9rem;color:#64748B!important;margin-bottom:1.5rem;">Browse your database structure and preview data</div>',unsafe_allow_html=True)
     _tables={"customers":{"desc":"Customer accounts","emoji":"&#128101;","cols":[("customer_id","VARCHAR(10)","PK"),("company_name","VARCHAR(100)",""),("contact_name","VARCHAR(100)",""),("city","VARCHAR(50)",""),("country","VARCHAR(50)","")]},
         "orders":{"desc":"Customer orders","emoji":"&#128230;","cols":[("order_id","INT","PK"),("customer_id","VARCHAR(10)","FK&#8594;customers"),("order_date","DATE",""),("ship_city","VARCHAR(50)",""),("freight","FLOAT","")]},
         "order_details":{"desc":"Order line items","emoji":"&#128203;","cols":[("order_id","INT","FK&#8594;orders"),("product_id","INT","FK&#8594;products"),("quantity","INT",""),("unit_price","FLOAT","")]},
@@ -2079,7 +2081,7 @@ elif _page == "📋 Schema":
     _tcols=st.columns(5)
     for _tc,(_tn2,_ti) in zip(_tcols,_tables.items()):
         with _tc:
-            st.markdown(f'<div class="glass-card" style="text-align:center;padding:1rem;"><div style="font-size:1.8rem;">{_ti["emoji"]}</div><div style="font-size:0.85rem;font-weight:700;color:#F1F5F9!important;margin-top:0.4rem;">{_tn2}</div><div style="font-size:0.72rem;color:#475569!important;">{_ti["desc"]}</div></div>',unsafe_allow_html=True)
+            st.markdown(f'<div class="glass-card" style="text-align:center;padding:1rem;"><div style="font-size:1.8rem;">{_ti["emoji"]}</div><div style="font-size:0.85rem;font-weight:700;color:#F8FAFC!important;margin-top:0.4rem;">{_tn2}</div><div style="font-size:0.72rem;color:#64748B!important;">{_ti["desc"]}</div></div>',unsafe_allow_html=True)
     st.markdown("<br>",unsafe_allow_html=True)
     _sel=st.selectbox("Select a table:",list(_tables.keys()))
     if _sel:
@@ -2101,10 +2103,10 @@ elif _page == "📋 Schema":
 # SETTINGS PAGE
 # ══════════════════════════════════════════════════════════════════════════════
 elif _page == "⚙️ Settings":
-    st.markdown('<div style="font-size:1.8rem;font-weight:800;color:#FFFFFF!important;-webkit-text-fill-color:#FFFFFF!important;margin-bottom:0.4rem;">&#9881; Settings</div><div style="font-size:0.9rem;color:#475569!important;margin-bottom:1.5rem;">Database connection, API configuration, and app info</div>',unsafe_allow_html=True)
+    st.markdown('<div style="font-size:1.8rem;font-weight:800;color:#FFFFFF!important;-webkit-text-fill-color:#FFFFFF!important;margin-bottom:0.4rem;">&#9881; Settings</div><div style="font-size:0.9rem;color:#64748B!important;margin-bottom:1.5rem;">Database connection, API configuration, and app info</div>',unsafe_allow_html=True)
 
     # DB
-    st.markdown('<div class="glass-card" style="margin-bottom:1rem;"><div style="font-size:0.85rem;font-weight:700;color:#FBB724!important;margin-bottom:1rem;">&#128451; Database Connection Settings</div>',unsafe_allow_html=True)
+    st.markdown('<div class="glass-card" style="margin-bottom:1rem;"><div style="font-size:0.85rem;font-weight:700;color:#22D3EE!important;margin-bottom:1rem;">&#128451; Database Connection Settings</div>',unsafe_allow_html=True)
     from database import get_connection_status, update_db_config, get_db_type
     
     # Connection parameters from env
@@ -2113,9 +2115,9 @@ elif _page == "⚙️ Settings":
     
     _dok, _dmsg = get_connection_status()
     _ddot="status-dot-green" if _dok else "status-dot-red"
-    st.markdown(f'<div style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:0.8rem 1rem;margin-bottom:1rem;"><div><div style="font-size:0.85rem;font-weight:600;color:#E2E8F0!important;">Active Database</div><div style="font-size:0.75rem;color:#475569!important;">{_dmsg}</div></div><div><span class="{_ddot}"></span><span style="font-size:0.8rem;color:{"#10B981" if _dok else "#EF4444"}!important;">{"Online" if _dok else "Offline"}</span></div></div>',unsafe_allow_html=True)
+    st.markdown(f'<div style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:0.8rem 1rem;margin-bottom:1rem;"><div><div style="font-size:0.85rem;font-weight:600;color:#F8FAFC!important;">Active Database</div><div style="font-size:0.75rem;color:#64748B!important;">{_dmsg}</div></div><div><span class="{_ddot}"></span><span style="font-size:0.8rem;color:{"#6366F1" if _dok else "#EF4444"}!important;">{"Online" if _dok else "Offline"}</span></div></div>',unsafe_allow_html=True)
     
-    st.markdown('<p style="font-size:0.82rem;font-weight:700;color:#F1F5F9;margin-bottom:0.5rem;">Configure Database:</p>', unsafe_allow_html=True)
+    st.markdown('<p style="font-size:0.82rem;font-weight:700;color:#F8FAFC;margin-bottom:0.5rem;">Configure Database:</p>', unsafe_allow_html=True)
     
     # Form for updating database connection properties
     with st.form("db_config_form"):
@@ -2164,7 +2166,7 @@ elif _page == "⚙️ Settings":
     st.markdown('</div>',unsafe_allow_html=True)
 
     # Azure
-    st.markdown('<div class="glass-card" style="margin-bottom:1rem;"><div style="font-size:0.85rem;font-weight:700;color:#FBB724!important;margin-bottom:1rem;">&#129504; Azure OpenAI Configuration</div>',unsafe_allow_html=True)
+    st.markdown('<div class="glass-card" style="margin-bottom:1rem;"><div style="font-size:0.85rem;font-weight:700;color:#22D3EE!important;margin-bottom:1rem;">&#129504; Azure OpenAI Configuration</div>',unsafe_allow_html=True)
     import os; from dotenv import load_dotenv; load_dotenv()
     for _ek,_el in [("AZURE_OPENAI_ENDPOINT","OpenAI Endpoint"),("DEPLOYMENT_NAME","Model Deployment"),
         ("API_VERSION","API Version"),("AZURE_SEARCH_ENDPOINT","Search Endpoint"),("INDEX_NAME","Search Index")]:
@@ -2172,12 +2174,12 @@ elif _page == "⚙️ Settings":
         _eset=bool(_ev and "your_" not in _ev.lower())
         _edot="status-dot-green" if _eset else "status-dot-red"
         _edisp=(_ev[:40]+"..." if len(_ev)>40 else _ev) if _ev else "Not configured"
-        st.markdown(f'<div style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:0.7rem 1rem;margin-bottom:0.4rem;"><div><div style="font-size:0.82rem;font-weight:600;color:#E2E8F0!important;">{_el}</div><div style="font-size:0.72rem;color:#475569!important;font-family:monospace;">{_edisp}</div></div><span class="{_edot}"></span></div>',unsafe_allow_html=True)
-    st.markdown('<div style="font-size:0.78rem;color:#475569!important;margin-top:0.5rem;">Edit the <code style="color:#FBB724;">.env</code> file to update credentials.</div></div>',unsafe_allow_html=True)
+        st.markdown(f'<div style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:0.7rem 1rem;margin-bottom:0.4rem;"><div><div style="font-size:0.82rem;font-weight:600;color:#F8FAFC!important;">{_el}</div><div style="font-size:0.72rem;color:#64748B!important;font-family:monospace;">{_edisp}</div></div><span class="{_edot}"></span></div>',unsafe_allow_html=True)
+    st.markdown('<div style="font-size:0.78rem;color:#64748B!important;margin-top:0.5rem;">Edit the <code style="color:#22D3EE;">.env</code> file to update credentials.</div></div>',unsafe_allow_html=True)
 
     # App info
-    st.markdown('<div class="glass-card"><div style="font-size:0.85rem;font-weight:700;color:#FBB724!important;margin-bottom:1rem;">&#8505; Application Info</div>',unsafe_allow_html=True)
+    st.markdown('<div class="glass-card"><div style="font-size:0.85rem;font-weight:700;color:#22D3EE!important;margin-bottom:1rem;">&#8505; Application Info</div>',unsafe_allow_html=True)
     for _ik,_iv in [("Version","1.0.0"),("Framework","Streamlit 1.51"),("Python","3.13"),
         ("Database","MySQL 8.0 (XAMPP)"),("AI Model","Azure OpenAI GPT-4"),("Search","Azure Cognitive Search")]:
-        st.markdown(f'<div style="display:flex;justify-content:space-between;padding:0.4rem 0;border-bottom:1px solid rgba(255,255,255,0.04);"><span style="font-size:0.82rem;color:#64748B!important;">{_ik}</span><span style="font-size:0.82rem;color:#E2E8F0!important;font-weight:600;">{_iv}</span></div>',unsafe_allow_html=True)
+        st.markdown(f'<div style="display:flex;justify-content:space-between;padding:0.4rem 0;border-bottom:1px solid rgba(255,255,255,0.04);"><span style="font-size:0.82rem;color:#94A3B8!important;">{_ik}</span><span style="font-size:0.82rem;color:#F8FAFC!important;font-weight:600;">{_iv}</span></div>',unsafe_allow_html=True)
     st.markdown('</div>',unsafe_allow_html=True)
